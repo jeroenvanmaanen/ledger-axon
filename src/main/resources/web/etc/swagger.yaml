@@ -1,0 +1,52 @@
+swagger: "2.0"
+info:
+  description: "This is a sample greeter server. [Swagger contract](resources/etc/swagger.json).  You can find out more about Swagger at [http://swagger.io](http://swagger.io) or on [irc.freenode.net, #swagger](http://swagger.io/irc/)."
+  version: 1.0.0
+  title: Greeter example
+  termsOfService: http://swagger.io/terms/
+  contact:
+    email: jeroen@sollunae.net
+  license:
+    name: LGPLv3
+    url: https://www.gnu.org/licenses/lgpl-3.0.en.html
+## host: localhost
+basePath: /api/greeter
+schemes:
+  - http
+consumes: []
+produces:
+- application/json
+paths:
+  /prod/{name}:
+    post:
+      description: Prod the greeter to provoke a response
+      operationId: prod
+      parameters:
+        - in: path
+          name: name
+          description: The name of the person to greet
+          required: true
+          type: string
+      responses:
+        200:
+          description: successful operation
+          schema:
+            type: string
+        405:
+          description: Invalid input
+      security:
+        - petstore_auth:
+            - write:pets
+            - read:pets
+securityDefinitions:
+  petstore_auth:
+    type: oauth2
+    authorizationUrl: https://petstore.swagger.io/oauth/authorize
+    flow: implicit
+    scopes:
+      write:pets: modify pets in your account
+      read:pets: read your pets
+  api_key:
+    type: apiKey
+    name: api_key
+    in: header

@@ -1,36 +1,29 @@
 {
-  "swagger": "2.0",
+  "basePath": "/api/greeter",
+  "consumes": [],
   "info": {
-    "description": "This is a sample greeter server. [Swagger contract](resources/etc/swagger.json).  You can find out more about Swagger at [http://swagger.io](http://swagger.io) or on [irc.freenode.net, #swagger](http://swagger.io/irc/).",
-    "version": "1.0.0",
-    "title": "Greeter example",
-    "termsOfService": "http://swagger.io/terms/",
     "contact": {
       "email": "jeroen@sollunae.net"
     },
+    "description": "This is a sample greeter server. [Swagger contract](resources/etc/swagger.json).  You can find out more about Swagger at [http://swagger.io](http://swagger.io) or on [irc.freenode.net, #swagger](http://swagger.io/irc/).",
     "license": {
       "name": "LGPLv3",
       "url": "https://www.gnu.org/licenses/lgpl-3.0.en.html"
-    }
+    },
+    "termsOfService": "http://swagger.io/terms/",
+    "title": "Greeter example",
+    "version": "1.0.0"
   },
-  "host": "localhost",
-  "basePath": "/api/greeter",
-  "schemes": [
-    "http"
-  ],
   "paths": {
     "/prod/{name}": {
       "post": {
         "description": "Prod the greeter to provoke a response",
         "operationId": "prod",
-        "produces": [
-          "application/json"
-        ],
         "parameters": [
           {
+            "description": "The name of the person to greet",
             "in": "path",
             "name": "name",
-            "description": "The name of the person to greet",
             "required": true,
             "type": "string"
           }
@@ -57,20 +50,27 @@
       }
     }
   },
+  "produces": [
+    "application/json"
+  ],
+  "schemes": [
+    "http"
+  ],
   "securityDefinitions": {
+    "api_key": {
+      "in": "header",
+      "name": "api_key",
+      "type": "apiKey"
+    },
     "petstore_auth": {
-      "type": "oauth2",
       "authorizationUrl": "https://petstore.swagger.io/oauth/authorize",
       "flow": "implicit",
       "scopes": {
-        "write:pets": "modify pets in your account",
-        "read:pets": "read your pets"
-      }
-    },
-    "api_key": {
-      "type": "apiKey",
-      "name": "api_key",
-      "in": "header"
+        "read:pets": "read your pets",
+        "write:pets": "modify pets in your account"
+      },
+      "type": "oauth2"
     }
-  }
+  },
+  "swagger": "2.0"
 }
