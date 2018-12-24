@@ -1,0 +1,4 @@
+{
+  "basePackage": "org.sollunae.ledger.rest",
+  "configPackage": "org.sollunae.ledger.rest.config"
+}
