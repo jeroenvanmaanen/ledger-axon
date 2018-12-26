@@ -1,9 +1,19 @@
 {
   "basePath": "/api/greeter",
   "consumes": [],
+  "definitions": {
+    "Jar": {
+      "properties": {
+        "code": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    }
+  },
   "info": {
     "contact": {
-      "email": "jeroen@sollunae.net"
+      "url": "http://leialearns.org/contact/"
     },
     "description": "This is a sample greeter server. [Swagger contract](resources/etc/swagger.json).  You can find out more about Swagger at [http://swagger.io](http://swagger.io) or on [irc.freenode.net, #swagger](http://swagger.io/irc/).",
     "license": {
@@ -15,6 +25,57 @@
     "version": "1.0.0"
   },
   "paths": {
+    "/entry": {
+      "post": {
+        "description": "Create a new ledger Entry",
+        "operationId": "createEntry",
+        "responses": {
+          "201": {
+            "description": "entry created",
+            "schema": {
+              "type": "string"
+            }
+          }
+        },
+        "tags": [
+          "Ledger"
+        ]
+      }
+    },
+    "/entry/{id}/jar": {
+      "post": {
+        "consumes": [
+          "application/json"
+        ],
+        "description": "Assign an Entry to a Jar",
+        "operationId": "assignEntryToJar",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "type": "string"
+          },
+          {
+            "in": "body",
+            "name": "jar",
+            "schema": {
+              "$ref": "#/definitions/Jar"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "schema": {
+              "type": "string"
+            }
+          }
+        },
+        "tags": [
+          "Ledger"
+        ]
+      }
+    },
     "/prod/{name}": {
       "post": {
         "description": "Prod the greeter to provoke a response",
@@ -46,6 +107,9 @@
               "read:pets"
             ]
           }
+        ],
+        "tags": [
+          "Greeter"
         ]
       }
     }
@@ -72,5 +136,8 @@
       "type": "oauth2"
     }
   },
-  "swagger": "2.0"
+  "swagger": "2.0",
+  "tags": [
+    "Ledger"
+  ]
 }

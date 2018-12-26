@@ -10,7 +10,7 @@ import java.lang.invoke.MethodHandles;
 import java.util.Optional;
 
 @Component
-public class ProdService implements ProdApiDelegate {
+public class GreeterService implements GreeterApiDelegate {
     private static final Logger LOGGER = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
     @PostConstruct

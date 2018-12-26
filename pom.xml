@@ -114,7 +114,9 @@
                         <argument>org.sollunae.ledger.rest</argument>
                         <argument>-c</argument>
                         <argument>${project.basedir}/src/main/resources/etc/swagger-codegen-config.json</argument>
+                        <argument>-DuseTags=true</argument>
                         <argument>-DdelegatePattern=true</argument>
+                        <argument>-DdateLibrary=java8</argument>
                         <argument>-o</argument>
                         <argument>${project.basedir}/target/generated-sources/swagger</argument>
                     </arguments>
