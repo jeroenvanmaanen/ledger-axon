@@ -8,7 +8,6 @@ import org.springframework.stereotype.Component;
 import javax.annotation.PostConstruct;
 import java.lang.invoke.MethodHandles;
 import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
 
 @Component
 public class GreeterService implements GreeterApiDelegate {
@@ -20,7 +19,7 @@ public class GreeterService implements GreeterApiDelegate {
     }
 
     @Override
-    public CompletableFuture<ResponseEntity<String>> prod(String name) {
-        return CompletableFuture.completedFuture(ResponseEntity.of(Optional.of("Hello, " + name + "!")));
+    public ResponseEntity<String> prod(String name) {
+        return ResponseEntity.of(Optional.of("Hello, " + name + "!"));
     }
 }

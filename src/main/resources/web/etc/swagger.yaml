@@ -37,9 +37,9 @@ paths:
         405:
           description: Invalid input
       security:
-      - petstore_auth:
-        - write:pets
-        - read:pets
+      - ledger_auth:
+        - write:ledger
+        - read:ledger
   /entry:
     post:
       tags:
@@ -51,7 +51,7 @@ paths:
         name: entry
         description: Data for the entry to add
         schema:
-          $ref: "#/definitions/Entry"
+          $ref: "#/definitions/EntryData"
       responses:
         201:
           description: Entry created
@@ -72,19 +72,19 @@ paths:
       - in: body
         name: jar
         schema:
-          $ref: "#/definitions/Jar"
+          $ref: "#/definitions/JarData"
       responses:
         200:
           description: successful operation
           schema:
             type: string
 definitions:
-  Jar:
+  JarData:
     type: object
     properties:
       code:
         type: string
-  Entry:
+  EntryData:
     type: object
     required:
       - date
@@ -111,7 +111,7 @@ definitions:
         type: string
       remarks:
         type: string
-  Label:
+  LabelData:
     type: object
     properties:
       id:
@@ -124,7 +124,7 @@ definitions:
         type: string
       isComplete:
         type: boolean
-  Compound:
+  CompoundData:
     type: object
     properties:
       id:
@@ -134,13 +134,13 @@ definitions:
         items:
           type: string
 securityDefinitions:
-  petstore_auth:
+  ledger_auth:
     type: oauth2
-    authorizationUrl: https://petstore.swagger.io/oauth/authorize
+    authorizationUrl: /oauth/authorize
     flow: implicit
     scopes:
-      write:pets: modify pets in your account
-      read:pets: read your pets
+      write:ledger: modify ledger in your account
+      read:ledger: read your ledger
   api_key:
     type: apiKey
     name: api_key

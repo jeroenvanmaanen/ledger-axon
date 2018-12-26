@@ -2,7 +2,7 @@
   "basePath": "/api/greeter",
   "consumes": [],
   "definitions": {
-    "Compound": {
+    "CompoundData": {
       "properties": {
         "entryIds": {
           "items": {
@@ -16,7 +16,7 @@
       },
       "type": "object"
     },
-    "Entry": {
+    "EntryData": {
       "properties": {
         "account": {
           "type": "string"
@@ -56,7 +56,7 @@
       ],
       "type": "object"
     },
-    "Jar": {
+    "JarData": {
       "properties": {
         "code": {
           "type": "string"
@@ -64,7 +64,7 @@
       },
       "type": "object"
     },
-    "Label": {
+    "LabelData": {
       "properties": {
         "description": {
           "type": "string"
@@ -109,7 +109,7 @@
             "in": "body",
             "name": "entry",
             "schema": {
-              "$ref": "#/definitions/Entry"
+              "$ref": "#/definitions/EntryData"
             }
           }
         ],
@@ -143,7 +143,7 @@
             "in": "body",
             "name": "jar",
             "schema": {
-              "$ref": "#/definitions/Jar"
+              "$ref": "#/definitions/JarData"
             }
           }
         ],
@@ -186,9 +186,9 @@
         },
         "security": [
           {
-            "petstore_auth": [
-              "write:pets",
-              "read:pets"
+            "ledger_auth": [
+              "write:ledger",
+              "read:ledger"
             ]
           }
         ],
@@ -210,12 +210,12 @@
       "name": "api_key",
       "type": "apiKey"
     },
-    "petstore_auth": {
-      "authorizationUrl": "https://petstore.swagger.io/oauth/authorize",
+    "ledger_auth": {
+      "authorizationUrl": "/oauth/authorize",
       "flow": "implicit",
       "scopes": {
-        "read:pets": "read your pets",
-        "write:pets": "modify pets in your account"
+        "read:ledger": "read your ledger",
+        "write:ledger": "modify ledger in your account"
       },
       "type": "oauth2"
     }

@@ -110,7 +110,7 @@
                         <argument>org.sollunae.ledger.model</argument>
                         <argument>-DconfigPackage=org.sollunae.ledger.rest.config</argument>
                         <argument>-DuseTags=true</argument>
-                        <argument>-Dasync=true</argument>
+                        <!-- argument>-Dasync=true</argument -->
                         <argument>-DdelegatePattern=true</argument>
                         <argument>-DdateLibrary=java8</argument>
                         <argument>-o</argument>
