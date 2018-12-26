@@ -2,9 +2,83 @@
   "basePath": "/api/greeter",
   "consumes": [],
   "definitions": {
+    "Compound": {
+      "properties": {
+        "entryIds": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "id": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "Entry": {
+      "properties": {
+        "account": {
+          "type": "string"
+        },
+        "amountCents": {
+          "type": "integer"
+        },
+        "code": {
+          "type": "string"
+        },
+        "contraAccount": {
+          "type": "string"
+        },
+        "date": {
+          "type": "string"
+        },
+        "debetCredit": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        },
+        "kind": {
+          "type": "string"
+        },
+        "remarks": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "date",
+        "account",
+        "amountCents"
+      ],
+      "type": "object"
+    },
     "Jar": {
       "properties": {
         "code": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "Label": {
+      "properties": {
+        "description": {
+          "type": "string"
+        },
+        "entryId": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        },
+        "isComplete": {
+          "type": "boolean"
+        },
+        "jar": {
           "type": "string"
         }
       },
@@ -15,13 +89,13 @@
     "contact": {
       "url": "http://leialearns.org/contact/"
     },
-    "description": "This is a sample greeter server. [Swagger contract](resources/etc/swagger.json).  You can find out more about Swagger at [http://swagger.io](http://swagger.io) or on [irc.freenode.net, #swagger](http://swagger.io/irc/).",
+    "description": "This is Ledger server. [Swagger contract](resources/etc/swagger.json).  You can find out more about Ledger at [http://swagger.io](http://swagger.io) or on [irc.freenode.net, #swagger](http://swagger.io/irc/).",
     "license": {
       "name": "LGPLv3",
       "url": "https://www.gnu.org/licenses/lgpl-3.0.en.html"
     },
     "termsOfService": "http://swagger.io/terms/",
-    "title": "Greeter example",
+    "title": "Ledger",
     "version": "1.0.0"
   },
   "paths": {
@@ -29,9 +103,19 @@
       "post": {
         "description": "Create a new ledger Entry",
         "operationId": "createEntry",
+        "parameters": [
+          {
+            "description": "Data for the entry to add",
+            "in": "body",
+            "name": "entry",
+            "schema": {
+              "$ref": "#/definitions/Entry"
+            }
+          }
+        ],
         "responses": {
           "201": {
-            "description": "entry created",
+            "description": "Entry created",
             "schema": {
               "type": "string"
             }
@@ -91,7 +175,7 @@
         ],
         "responses": {
           "200": {
-            "description": "successful operation",
+            "description": "Successful operation",
             "schema": {
               "type": "string"
             }
@@ -136,8 +220,5 @@
       "type": "oauth2"
     }
   },
-  "swagger": "2.0",
-  "tags": [
-    "Ledger"
-  ]
+  "swagger": "2.0"
 }

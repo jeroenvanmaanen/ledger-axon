@@ -20,7 +20,6 @@
         <swagger.version>2.4.0</swagger.version>
         <springfox.version>2.9.2</springfox.version>
         <swagger-codegen-cli.version>2.4.0</swagger-codegen-cli.version>
-        <jackson-datatype-threetenbp.version>2.6.4</jackson-datatype-threetenbp.version>
     </properties>
 
     <dependencies>
@@ -67,11 +66,6 @@
             <artifactId>lombok</artifactId>
             <optional>true</optional>
         </dependency>
-        <dependency>
-            <groupId>com.github.joschi.jackson</groupId>
-            <artifactId>jackson-datatype-threetenbp</artifactId>
-            <version>${jackson-datatype-threetenbp.version}</version>
-        </dependency>
 
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -112,9 +106,11 @@
                         <argument>spring-mvc</argument>
                         <argument>--api-package</argument>
                         <argument>org.sollunae.ledger.rest</argument>
-                        <argument>-c</argument>
-                        <argument>${project.basedir}/src/main/resources/etc/swagger-codegen-config.json</argument>
+                        <argument>--model-package</argument>
+                        <argument>org.sollunae.ledger.model</argument>
+                        <argument>-DconfigPackage=org.sollunae.ledger.rest.config</argument>
                         <argument>-DuseTags=true</argument>
+                        <argument>-Dasync=true</argument>
                         <argument>-DdelegatePattern=true</argument>
                         <argument>-DdateLibrary=java8</argument>
                         <argument>-o</argument>

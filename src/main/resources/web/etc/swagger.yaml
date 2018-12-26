@@ -1,8 +1,8 @@
 swagger: "2.0"
 info:
-  description: "This is a sample greeter server. [Swagger contract](resources/etc/swagger.json).  You can find out more about Swagger at [http://swagger.io](http://swagger.io) or on [irc.freenode.net, #swagger](http://swagger.io/irc/)."
+  description: "This is Ledger server. [Swagger contract](resources/etc/swagger.json).  You can find out more about Ledger at [http://swagger.io](http://swagger.io) or on [irc.freenode.net, #swagger](http://swagger.io/irc/)."
   version: 1.0.0
-  title: Greeter example
+  title: Ledger
   termsOfService: http://swagger.io/terms/
   contact:
     url: http://leialearns.org/contact/
@@ -16,8 +16,6 @@ schemes:
 consumes: []
 produces:
 - application/json
-tags:
-  - Ledger
 paths:
   /prod/{name}:
     post:
@@ -33,7 +31,7 @@ paths:
         type: string
       responses:
         200:
-          description: successful operation
+          description: Successful operation
           schema:
             type: string
         405:
@@ -48,9 +46,15 @@ paths:
       - Ledger
       description: Create a new ledger Entry
       operationId: createEntry
+      parameters:
+      - in: body
+        name: entry
+        description: Data for the entry to add
+        schema:
+          $ref: "#/definitions/Entry"
       responses:
         201:
-          description: entry created
+          description: Entry created
           schema:
             type: string
   "/entry/{id}/jar":
@@ -80,6 +84,55 @@ definitions:
     properties:
       code:
         type: string
+  Entry:
+    type: object
+    required:
+      - date
+      - account
+      - amountCents
+    properties:
+      id:
+        type: string
+      date:
+        type: string
+      description:
+        type: string
+      account:
+        type: string
+      contraAccount:
+        type: string
+      code:
+        type: string
+      debetCredit:
+        type: string
+      amountCents:
+        type: integer
+      kind:
+        type: string
+      remarks:
+        type: string
+  Label:
+    type: object
+    properties:
+      id:
+        type: string
+      entryId:
+        type: string
+      description:
+        type: string
+      jar:
+        type: string
+      isComplete:
+        type: boolean
+  Compound:
+    type: object
+    properties:
+      id:
+        type: string
+      entryIds:
+        type: array
+        items:
+          type: string
 securityDefinitions:
   petstore_auth:
     type: oauth2
