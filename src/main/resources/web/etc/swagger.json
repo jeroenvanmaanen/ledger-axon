@@ -31,6 +31,8 @@
           "type": "string"
         },
         "date": {
+          "example": "2018-11-30",
+          "format": "date",
           "type": "string"
         },
         "debetCredit": {

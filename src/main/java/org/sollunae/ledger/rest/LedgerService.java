@@ -2,17 +2,21 @@ package org.sollunae.ledger.rest;
 
 import org.axonframework.commandhandling.GenericCommandMessage;
 import org.axonframework.commandhandling.gateway.CommandGateway;
-import org.sollunae.ledger.axon.command.CreateEntryCommand;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.sollunae.ledger.axon.entry.command.CreateEntryCommand;
 import org.sollunae.ledger.model.EntryData;
 import org.sollunae.ledger.model.JarData;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 
+import java.lang.invoke.MethodHandles;
 import java.util.UUID;
 
 @Component
 public class LedgerService implements LedgerApiDelegate {
+    private static final Logger LOGGER = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
     private final CommandGateway commandGateway;
 
@@ -32,7 +36,12 @@ public class LedgerService implements LedgerApiDelegate {
             .id(id)
             .entry(entry)
             .build();
-        commandGateway.sendAndWait(GenericCommandMessage.asCommandMessage(createEntryCommand));
-        return ResponseEntity.status(HttpStatus.CREATED).body(id);
+        try {
+            commandGateway.sendAndWait(GenericCommandMessage.asCommandMessage(createEntryCommand));
+            return ResponseEntity.status(HttpStatus.CREATED).body(id);
+        } catch (RuntimeException exception) {
+            LOGGER.error("Exception during command execution: {}", exception.getCause(), exception);
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(null);
+        }
     }
 }

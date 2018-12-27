@@ -1,4 +1,4 @@
-package org.sollunae.ledger.axon.command;
+package org.sollunae.ledger.axon.entry.command;
 
 import lombok.Builder;
 import lombok.Value;

@@ -95,6 +95,8 @@ definitions:
         type: string
       date:
         type: string
+        format: date
+        example: 2018-11-30
       description:
         type: string
       account:

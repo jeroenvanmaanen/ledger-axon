@@ -1,4 +1,4 @@
-package org.sollunae.ledger.axon.event;
+package org.sollunae.ledger.axon.entry.event;
 
 import lombok.Builder;
 import lombok.Value;
