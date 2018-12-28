@@ -137,6 +137,31 @@
     "version": "1.0.0"
   },
   "paths": {
+    "/account/upload": {
+      "post": {
+        "consumes": [
+          "multipart/form-data"
+        ],
+        "description": "Upload new Accounts",
+        "operationId": "uploadAccounts",
+        "parameters": [
+          {
+            "description": "The data to upload",
+            "in": "formData",
+            "name": "data",
+            "type": "file"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful operation"
+          }
+        },
+        "tags": [
+          "Ledger"
+        ]
+      }
+    },
     "/account/{id}": {
       "put": {
         "description": "Create a new Account",
@@ -214,12 +239,38 @@
         ]
       }
     },
+    "/entry/upload": {
+      "post": {
+        "consumes": [
+          "multipart/form-data"
+        ],
+        "description": "Upload new Entries",
+        "operationId": "uploadEntries",
+        "parameters": [
+          {
+            "description": "The data to upload",
+            "in": "formData",
+            "name": "data",
+            "type": "file"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful operation"
+          }
+        },
+        "tags": [
+          "Ledger"
+        ]
+      }
+    },
     "/entry/{id}/compound": {
       "delete": {
         "description": "Remove an Entry from a Compound Transaction",
         "operationId": "removeEntryFromCompound",
         "parameters": [
           {
+            "description": "The Id of the Entry that is to be removed from its current Compound",
             "in": "path",
             "name": "id",
             "type": "string"
@@ -241,11 +292,13 @@
         "operationId": "addEntryToCompound",
         "parameters": [
           {
+            "description": "The Id of the Entry to add",
             "in": "path",
             "name": "id",
             "type": "string"
           },
           {
+            "description": "The Id of the Compound to add the Entry to",
             "in": "path",
             "name": "compoundId",
             "type": "string"
@@ -270,11 +323,13 @@
         "operationId": "assignEntryToJar",
         "parameters": [
           {
+            "description": "The Id of the Entry",
             "in": "path",
             "name": "id",
             "type": "string"
           },
           {
+            "description": "The Jar to assign to the Entry",
             "in": "body",
             "name": "jar",
             "schema": {
@@ -284,10 +339,7 @@
         ],
         "responses": {
           "200": {
-            "description": "Successful operation",
-            "schema": {
-              "type": "string"
-            }
+            "description": "Successful operation"
           }
         },
         "tags": [

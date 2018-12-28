@@ -78,7 +78,7 @@ paths:
           description: Entry created
           schema:
             type: string
-  "/entry/{id}/compound/{compoundId}":
+  /entry/{id}/compound/{compoundId}:
     post:
       tags:
       - Ledger
@@ -87,14 +87,16 @@ paths:
       parameters:
       - in: path
         name: id
+        description: The Id of the Entry to add
         type: string
       - in: path
         name: compoundId
+        description: The Id of the Compound to add the Entry to
         type: string
       responses:
         200:
           description: Successful operation
-  "/entry/{id}/compound":
+  /entry/{id}/compound:
     delete:
       tags:
       - Ledger
@@ -103,11 +105,12 @@ paths:
       parameters:
       - in: path
         name: id
+        description: The Id of the Entry that is to be removed from its current Compound
         type: string
       responses:
         200:
           description: Successful operation
-  "/entry/{id}/jar":
+  /entry/{id}/jar:
     post:
       tags:
       - Ledger
@@ -118,16 +121,16 @@ paths:
       parameters:
       - in: path
         name: id
+        description: The Id of the Entry
         type: string
       - in: body
         name: jar
+        description: The Jar to assign to the Entry
         schema:
           $ref: "#/definitions/JarData"
       responses:
         200:
           description: Successful operation
-          schema:
-            type: string
   /compound:
     post:
       tags:
@@ -139,6 +142,38 @@ paths:
           description: Compound Transaction created
           schema:
             type: string
+  /account/upload:
+    post:
+      tags:
+      - Ledger
+      description: Upload new Accounts
+      operationId: uploadAccounts
+      consumes:
+      - multipart/form-data
+      parameters:
+      - in: formData
+        name: data
+        description: The data to upload
+        type: file
+      responses:
+        200:
+          description: Successful operation
+  /entry/upload:
+    post:
+      tags:
+      - Ledger
+      description: Upload new Entries
+      operationId: uploadEntries
+      consumes:
+      - multipart/form-data
+      parameters:
+      - in: formData
+        name: data
+        description: The data to upload
+        type: file
+      responses:
+        200:
+          description: Successful operation
 definitions:
   AccountData:
     type: object

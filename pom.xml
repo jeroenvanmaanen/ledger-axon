@@ -20,6 +20,8 @@
         <swagger.version>2.4.0</swagger.version>
         <springfox.version>2.9.2</springfox.version>
         <swagger-codegen-cli.version>2.4.0</swagger-codegen-cli.version>
+        <apache-commons-csv.version>1.6</apache-commons-csv.version>
+        <jackson.version>2.9.7</jackson.version>
     </properties>
 
     <dependencies>
@@ -65,6 +67,17 @@
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
             <optional>true</optional>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-csv</artifactId>
+            <version>${apache-commons-csv.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.dataformat</groupId>
+            <artifactId>jackson-dataformat-yaml</artifactId>
+            <version>${jackson.version}</version>
         </dependency>
 
         <dependency>
