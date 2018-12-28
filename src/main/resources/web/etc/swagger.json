@@ -16,6 +16,17 @@
       },
       "type": "object"
     },
+    "CompoundReference": {
+      "properties": {
+        "compoundId": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "compoundId"
+      ],
+      "type": "object"
+    },
     "EntryData": {
       "properties": {
         "account": {
@@ -101,6 +112,23 @@
     "version": "1.0.0"
   },
   "paths": {
+    "/compound": {
+      "post": {
+        "description": "Create a new Compound Transaction",
+        "operationId": "createCompound",
+        "responses": {
+          "201": {
+            "description": "Compound Transaction created",
+            "schema": {
+              "type": "string"
+            }
+          }
+        },
+        "tags": [
+          "Ledger"
+        ]
+      }
+    },
     "/entry": {
       "post": {
         "description": "Create a new ledger Entry",
@@ -121,6 +149,53 @@
             "schema": {
               "type": "string"
             }
+          }
+        },
+        "tags": [
+          "Ledger"
+        ]
+      }
+    },
+    "/entry/{id}/compound": {
+      "delete": {
+        "description": "Remove an Entry from a Compound Transaction",
+        "operationId": "removeEntryFromCompound",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful operation"
+          }
+        },
+        "tags": [
+          "Ledger"
+        ]
+      }
+    },
+    "/entry/{id}/compound/{compoundId}": {
+      "post": {
+        "description": "Add an Entry to a Compound Transaction",
+        "operationId": "addEntryToCompound",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "type": "string"
+          },
+          {
+            "in": "path",
+            "name": "compoundId",
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful operation"
           }
         },
         "tags": [
@@ -151,7 +226,7 @@
         ],
         "responses": {
           "200": {
-            "description": "successful operation",
+            "description": "Successful operation",
             "schema": {
               "type": "string"
             }

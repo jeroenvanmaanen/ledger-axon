@@ -57,6 +57,35 @@ paths:
           description: Entry created
           schema:
             type: string
+  "/entry/{id}/compound/{compoundId}":
+    post:
+      tags:
+      - Ledger
+      description: Add an Entry to a Compound Transaction
+      operationId: addEntryToCompound
+      parameters:
+      - in: path
+        name: id
+        type: string
+      - in: path
+        name: compoundId
+        type: string
+      responses:
+        200:
+          description: Successful operation
+  "/entry/{id}/compound":
+    delete:
+      tags:
+      - Ledger
+      description: Remove an Entry from a Compound Transaction
+      operationId: removeEntryFromCompound
+      parameters:
+      - in: path
+        name: id
+        type: string
+      responses:
+        200:
+          description: Successful operation
   "/entry/{id}/jar":
     post:
       tags:
@@ -75,7 +104,18 @@ paths:
           $ref: "#/definitions/JarData"
       responses:
         200:
-          description: successful operation
+          description: Successful operation
+          schema:
+            type: string
+  /compound:
+    post:
+      tags:
+      - Ledger
+      description: Create a new Compound Transaction
+      operationId: createCompound
+      responses:
+        201:
+          description: Compound Transaction created
           schema:
             type: string
 definitions:
@@ -135,6 +175,13 @@ definitions:
         type: array
         items:
           type: string
+  CompoundReference:
+    type: object
+    required:
+      - compoundId
+    properties:
+      compoundId:
+        type: string
 securityDefinitions:
   ledger_auth:
     type: oauth2
