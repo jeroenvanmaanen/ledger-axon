@@ -25,7 +25,6 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
 import static org.axonframework.modelling.command.AggregateLifecycle.apply;
@@ -43,17 +42,16 @@ public class Entry {
     private String compoundId;
 
     @CommandHandler
-    public Entry(CreateEntryCommand createEntryCommand, MongoTemplate mongoTemplate) {
-        id = UUID.randomUUID().toString();
+    public Entry(CreateEntryCommand createCommand, MongoTemplate mongoTemplate) {
+        id = createCommand.getId();
         LOGGER.info("Create entry: {}: Mongo template: {}", id, mongoTemplate);
-        EntryData entry = createEntryCommand.getEntry();
-        entry.setId(id);
+        EntryData data = createCommand.getEntry();
         try {
-            mongoTemplate.insert(UniqueEntryDocument.builder().aggregateId(id).uniqueKey(createUniqueKey(entry)).build());
+            mongoTemplate.insert(UniqueEntryDocument.builder().aggregateId(id).uniqueKey(createUniqueKey(data)).build());
         } catch (RuntimeException exception) {
             throw new RuntimeException("Could not insert unique key document", exception);
         }
-        apply(EntryCreatedEvent.builder().id(id).data(entry).build());
+        apply(EntryCreatedEvent.builder().id(id).data(data).build());
     }
 
     @EventSourcingHandler
@@ -68,12 +66,12 @@ public class Entry {
         if (Objects.equals(compoundId, this.compoundId)) {
             return;
         }
-        CompoundAddEntryCommand compoundAddEntryCommand = CompoundAddEntryCommand.builder()
+        Object compoundAddEntryCommand = CompoundAddEntryCommand.builder()
             .id(compoundId)
             .entryId(id)
             .build();
         commandGateway.sendAndWait(compoundAddEntryCommand);
-        EntryCompoundAddedEvent entryCompoundAddedEvent = EntryCompoundAddedEvent.builder()
+        Object entryCompoundAddedEvent = EntryCompoundAddedEvent.builder()
             .entryId(id)
             .compoundId(compoundId)
             .build();
@@ -90,12 +88,12 @@ public class Entry {
         if (compoundId == null) {
             return;
         }
-        CompoundRemoveEntryCommand compoundRemoveEntryCommand = CompoundRemoveEntryCommand.builder()
+        Object compoundRemoveEntryCommand = CompoundRemoveEntryCommand.builder()
             .id(compoundId)
             .entryId(id)
             .build();
         commandGateway.sendAndWait(compoundRemoveEntryCommand);
-        EntryCompoundRemovedEvent entryCompoundRemovedEvent = EntryCompoundRemovedEvent.builder()
+        Object entryCompoundRemovedEvent = EntryCompoundRemovedEvent.builder()
             .entryId(id)
             .compoundId(compoundId)
             .build();

@@ -40,6 +40,27 @@ paths:
       - ledger_auth:
         - write:ledger
         - read:ledger
+  /account/{id}:
+    put:
+      tags:
+      - Ledger
+      description: Create a new Account
+      operationId: createAccount
+      parameters:
+      - in: path
+        name: id
+        description: The account number of the account to add
+        type: string
+      - in: body
+        name: account
+        description: Data for the account to add
+        schema:
+          $ref: "#/definitions/AccountData"
+      responses:
+        201:
+          description: Account created
+          schema:
+            type: string
   /entry:
     post:
       tags:
@@ -119,6 +140,23 @@ paths:
           schema:
             type: string
 definitions:
+  AccountData:
+    type: object
+    required:
+      - bank
+      - account
+      - key
+    properties:
+      bank:
+        type: string
+      account:
+        type: string
+      key:
+        type: string
+      label:
+        type: string
+      depth:
+        type: integer
   JarData:
     type: object
     properties:

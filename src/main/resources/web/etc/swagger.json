@@ -2,6 +2,31 @@
   "basePath": "/api/greeter",
   "consumes": [],
   "definitions": {
+    "AccountData": {
+      "properties": {
+        "account": {
+          "type": "string"
+        },
+        "bank": {
+          "type": "string"
+        },
+        "depth": {
+          "type": "integer"
+        },
+        "key": {
+          "type": "string"
+        },
+        "label": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "bank",
+        "account",
+        "key"
+      ],
+      "type": "object"
+    },
     "CompoundData": {
       "properties": {
         "entryIds": {
@@ -112,6 +137,39 @@
     "version": "1.0.0"
   },
   "paths": {
+    "/account/{id}": {
+      "put": {
+        "description": "Create a new Account",
+        "operationId": "createAccount",
+        "parameters": [
+          {
+            "description": "The account number of the account to add",
+            "in": "path",
+            "name": "id",
+            "type": "string"
+          },
+          {
+            "description": "Data for the account to add",
+            "in": "body",
+            "name": "account",
+            "schema": {
+              "$ref": "#/definitions/AccountData"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Account created",
+            "schema": {
+              "type": "string"
+            }
+          }
+        },
+        "tags": [
+          "Ledger"
+        ]
+      }
+    },
     "/compound": {
       "post": {
         "description": "Create a new Compound Transaction",
