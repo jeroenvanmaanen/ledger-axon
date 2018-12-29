@@ -41,7 +41,6 @@ public class LedgerService implements LedgerApiDelegate {
     private final CommandGateway commandGateway;
     private final Map<String,CSVFormat> csvFormatMap = new HashMap<>();
     private final Map<String, BiConsumer<EntryData,String>> stringSetterMap = new HashMap<>();
-    private final Map<String, BiConsumer<EntryData,Integer>> integerSetterMap = new HashMap<>();
     private final Map<String, BiConsumer<EntryData,LocalDate>> dateSetterMap = new HashMap<>();
 
     public LedgerService(CommandGateway commandGateway) {
@@ -49,14 +48,13 @@ public class LedgerService implements LedgerApiDelegate {
         for (CSVFormat.Predefined csvFormat : CSVFormat.Predefined.values()) {
             csvFormatMap.put(csvFormat.name(), csvFormat.getFormat());
         }
-        //Datum|Naam / Omschrijving|Rekening|Tegenrekening|Code|Af Bij|Bedrag (EUR)|MutatieSoort|Mededelingen
         dateSetterMap.put("Datum", EntryData::setDate);
         stringSetterMap.put("Naam / Omschrijving", EntryData::setDescription);
         stringSetterMap.put("Rekening", EntryData::setAccount);
         stringSetterMap.put("Tegenrekening", EntryData::setContraAccount);
         stringSetterMap.put("Code", EntryData::setCode);
         stringSetterMap.put("Af Bij", EntryData::setDebetCredit);
-        integerSetterMap.put("Bedrag (EUR)", EntryData::setAmountCents);
+        stringSetterMap.put("Bedrag (EUR)", EntryData::setAmount);
         stringSetterMap.put("MutatieSoort", EntryData::setKind);
         stringSetterMap.put("Mededelingen", EntryData::setRemarks);
     }
@@ -202,11 +200,21 @@ public class LedgerService implements LedgerApiDelegate {
         Iterable<CSVRecord> rows = csvFormat.parse(reader);
         int imported = 0;
         int failed = 0;
+        LocalDate lastDate = LocalDate.MIN;
+        int sequence = 0;
         for (CSVRecord row : rows) {
             try {
                 LOGGER.info("Row: {}", asStream(row).collect(Collectors.joining("|")));
                 EntryData entryData = mapRow(row);
                 String id = UUID.randomUUID().toString();
+                if (Objects.equals(entryData.getDate(), lastDate)) {
+                    sequence++;
+                } else {
+                    lastDate = entryData.getDate();
+                    sequence = 1;
+                }
+                String key = DateTimeFormatter.ISO_LOCAL_DATE.format(lastDate) + "_" + sequence;
+                entryData.setKey(key);
                 commandGateway.sendAndWait(CreateEntryCommand.builder().id(id).entry(entryData).build());
                 imported++;
             } catch (RuntimeException exception) {
@@ -221,7 +229,6 @@ public class LedgerService implements LedgerApiDelegate {
         EntryData entryData = new EntryData();
         for (Map.Entry<String,String> entry : row.toMap().entrySet()) {
             if (mapTo(entryData, stringSetterMap, Function.identity(), entry) ||
-                mapTo(entryData, integerSetterMap, this::toInteger, entry) ||
                 mapTo(entryData, dateSetterMap, this::toLocalDate, entry)) {
                 LOGGER.trace("Mapped: {}: {}", entry.getKey(), entry.getValue());
             } else {
@@ -239,10 +246,6 @@ public class LedgerService implements LedgerApiDelegate {
                 return true;
             })
             .orElse(false);
-    }
-
-    private Integer toInteger(String value) {
-        return Integer.parseInt(value.replaceAll("[^0-9]", "").replaceAll("^$", "0"));
     }
 
     private LocalDate toLocalDate(String value) {

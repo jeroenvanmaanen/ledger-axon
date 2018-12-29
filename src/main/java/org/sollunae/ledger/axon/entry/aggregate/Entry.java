@@ -110,7 +110,7 @@ public class Entry {
         List<String> parts = new ArrayList<>();
         parts.add(DateTimeFormatter.ISO_LOCAL_DATE.format(entry.getDate()));
         parts.add(entry.getAccount());
-        parts.add(String.valueOf(entry.getAmountCents()));
+        parts.add(entry.getAmount());
         parts.add(entry.getDebetCredit());
         parts.add(entry.getCode());
         parts.add(entry.getKind());

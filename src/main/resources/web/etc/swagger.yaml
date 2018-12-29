@@ -50,6 +50,7 @@ paths:
       - in: path
         name: id
         description: The account number of the account to add
+        required: true
         type: string
       - in: body
         name: account
@@ -88,10 +89,12 @@ paths:
       - in: path
         name: id
         description: The Id of the Entry to add
+        required: true
         type: string
       - in: path
         name: compoundId
         description: The Id of the Compound to add the Entry to
+        required: true
         type: string
       responses:
         200:
@@ -106,6 +109,7 @@ paths:
       - in: path
         name: id
         description: The Id of the Entry that is to be removed from its current Compound
+        required: true
         type: string
       responses:
         200:
@@ -122,6 +126,7 @@ paths:
       - in: path
         name: id
         description: The Id of the Entry
+        required: true
         type: string
       - in: body
         name: jar
@@ -170,6 +175,7 @@ paths:
       - in: path
         name: format
         description: Format of the CSV file (see org.apache.commons.csv.CSVFormat#Predefined)
+        required: true
         type: string
         enum:
         - Default
@@ -193,9 +199,9 @@ definitions:
   AccountData:
     type: object
     required:
-      - bank
-      - account
-      - key
+    - bank
+    - account
+    - key
     properties:
       bank:
         type: string
@@ -215,9 +221,9 @@ definitions:
   EntryData:
     type: object
     required:
-      - date
-      - account
-      - amountCents
+    - date
+    - account
+    - amountCents
     properties:
       id:
         type: string
@@ -233,9 +239,13 @@ definitions:
         type: string
       contraAccount:
         type: string
+      contraJar:
+        type: string
       code:
         type: string
       debetCredit:
+        type: string
+      amount:
         type: string
       amountCents:
         type: integer
@@ -245,6 +255,8 @@ definitions:
         type: string
       hidden:
         type: boolean
+      key:
+        type: string
   LabelData:
     type: object
     properties:
