@@ -1,3 +1,4 @@
+/data/**/*-local.*
 /.idea/
 /target/
 /tmp/

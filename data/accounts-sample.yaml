@@ -1,0 +1,56 @@
+{
+  "bank": "ING",
+  "account": "123000",
+  "label": "Income",
+  "key": "INC",
+  "depth": 1
+}
+---
+{
+  "bank": "Triodos",
+  "account": "123456",
+  "label": "Necessity Account",
+  "key": "NEC",
+  "depth": 2
+}
+---
+{
+  "bank": "ING",
+  "account": "987654",
+  "label": "Play Account",
+  "key": "PLY",
+  "depth": 3
+}
+---
+{
+  "bank": "Triodos",
+  "account": "987222",
+  "label": "Financial Freedom Account",
+  "key": "FFA",
+  "depth": 4
+}
+---
+{
+  "bank": "Triodos",
+  "account": "987333",
+  "label": "Education Account",
+  "key": "EDU",
+  "depth": 4
+}
+---
+{
+  "bank": "Triodos",
+  "account": "987444",
+  "label": "Long-term saving for spending Account",
+  "key": "LTS",
+  "depth": 4
+}
+---
+{
+  "bank": "Triodos",
+  "account": "987555",
+  "label": "Give Account",
+  "key": "GIV",
+  "depth": 4
+}
+---
