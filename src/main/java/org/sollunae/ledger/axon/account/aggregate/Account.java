@@ -10,7 +10,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.sollunae.ledger.axon.account.command.CreateAccountCommand;
 import org.sollunae.ledger.axon.account.event.AccountCreatedEvent;
-import org.sollunae.ledger.axon.compound.aggregate.AccountDocument;
 import org.sollunae.ledger.model.AccountData;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.util.StringUtils;

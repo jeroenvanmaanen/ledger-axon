@@ -24,8 +24,12 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.*;
 import java.lang.invoke.MethodHandles;
-import java.util.Objects;
-import java.util.UUID;
+import java.time.DateTimeException;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
+import java.util.function.BiConsumer;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static org.sollunae.ledger.util.StreamUtil.asStream;
@@ -35,9 +39,26 @@ public class LedgerService implements LedgerApiDelegate {
     private static final Logger LOGGER = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
     private final CommandGateway commandGateway;
+    private final Map<String,CSVFormat> csvFormatMap = new HashMap<>();
+    private final Map<String, BiConsumer<EntryData,String>> stringSetterMap = new HashMap<>();
+    private final Map<String, BiConsumer<EntryData,Integer>> integerSetterMap = new HashMap<>();
+    private final Map<String, BiConsumer<EntryData,LocalDate>> dateSetterMap = new HashMap<>();
 
     public LedgerService(CommandGateway commandGateway) {
         this.commandGateway = commandGateway;
+        for (CSVFormat.Predefined csvFormat : CSVFormat.Predefined.values()) {
+            csvFormatMap.put(csvFormat.name(), csvFormat.getFormat());
+        }
+        //Datum|Naam / Omschrijving|Rekening|Tegenrekening|Code|Af Bij|Bedrag (EUR)|MutatieSoort|Mededelingen
+        dateSetterMap.put("Datum", EntryData::setDate);
+        stringSetterMap.put("Naam / Omschrijving", EntryData::setDescription);
+        stringSetterMap.put("Rekening", EntryData::setAccount);
+        stringSetterMap.put("Tegenrekening", EntryData::setContraAccount);
+        stringSetterMap.put("Code", EntryData::setCode);
+        stringSetterMap.put("Af Bij", EntryData::setDebetCredit);
+        integerSetterMap.put("Bedrag (EUR)", EntryData::setAmountCents);
+        stringSetterMap.put("MutatieSoort", EntryData::setKind);
+        stringSetterMap.put("Mededelingen", EntryData::setRemarks);
     }
 
     @Override
@@ -130,16 +151,24 @@ public class LedgerService implements LedgerApiDelegate {
             ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
             String line;
             StringBuilder builder = new StringBuilder();
+            int imported = 0;
+            int failed = 0;
             while ((line = reader.readLine()) != null) {
                 if (line.equals("---")) {
-                    AccountData account = mapper.readValue(builder.toString(), AccountData.class);
-                    builder = new StringBuilder();
-                    LOGGER.info("Import account: {}: {}", account.getAccount(), account.getKey());
-                    Object createAccountCommand = CreateAccountCommand.builder()
-                        .id(account.getAccount())
-                        .data(account)
-                        .build();
-                    commandGateway.sendAndWait(createAccountCommand);
+                    try {
+                        AccountData account = mapper.readValue(builder.toString(), AccountData.class);
+                        builder = new StringBuilder();
+                        LOGGER.info("Import account: {}: {}", account.getAccount(), account.getKey());
+                        Object createAccountCommand = CreateAccountCommand.builder()
+                            .id(account.getAccount())
+                            .data(account)
+                            .build();
+                        commandGateway.sendAndWait(createAccountCommand);
+                        imported++;
+                    } catch (RuntimeException exception) {
+                        LOGGER.warn("Exception while importing entry: {}", exception);
+                        failed++;
+                    }
                 } else {
                     if (builder.length() > 0) {
                         builder.append('\n');
@@ -147,14 +176,15 @@ public class LedgerService implements LedgerApiDelegate {
                     builder.append(line);
                 }
             }
+            LOGGER.info("Accounts imported: {}: failed: {}", imported, failed);
         }
     }
 
     @Override
-    public ResponseEntity<Void> uploadEntries(MultipartFile data) {
+    public ResponseEntity<Void> uploadEntries(String format, MultipartFile data) {
         LOGGER.info("Upload entries CSV");
         try {
-            uploadEntries(data.getInputStream());
+            uploadEntries(format, data.getInputStream());
             return ResponseEntity.ok(null);
         } catch (RuntimeException | IOException exception) {
             LOGGER.error("Exception while uploading entries CSV", exception);
@@ -162,22 +192,64 @@ public class LedgerService implements LedgerApiDelegate {
         }
     }
 
-    private void uploadEntries(InputStream stream) throws IOException {
+    private void uploadEntries(String format, InputStream stream) throws IOException {
         Reader reader = new InputStreamReader(stream);
-        Iterable<CSVRecord> rows = CSVFormat.EXCEL.parse(reader);
-        for (CSVRecord row : rows) {
-            LOGGER.info("Row: {}", asStream(row).collect(Collectors.joining("|")));
+        CSVFormat csvFormat = csvFormatMap.get(format);
+        if (csvFormat == null) {
+            throw new RuntimeException("Unknown CSV format: " + format);
         }
+        csvFormat = csvFormat.withFirstRecordAsHeader();
+        Iterable<CSVRecord> rows = csvFormat.parse(reader);
+        int imported = 0;
+        int failed = 0;
+        for (CSVRecord row : rows) {
+            try {
+                LOGGER.info("Row: {}", asStream(row).collect(Collectors.joining("|")));
+                EntryData entryData = mapRow(row);
+                String id = UUID.randomUUID().toString();
+                commandGateway.sendAndWait(CreateEntryCommand.builder().id(id).entry(entryData).build());
+                imported++;
+            } catch (RuntimeException exception) {
+                LOGGER.warn("Exception while importing entry: {}", exception);
+                failed++;
+            }
+        }
+        LOGGER.info("Entries imported: {}: failed: {}", imported, failed);
     }
 
-    private void unwrapIOException(RuntimeException exception) throws IOException {
-        Throwable t = exception;
-        while (t != null) {
-            if (t instanceof IOException) {
-                throw (IOException) t;
+    private EntryData mapRow(CSVRecord row) {
+        EntryData entryData = new EntryData();
+        for (Map.Entry<String,String> entry : row.toMap().entrySet()) {
+            if (mapTo(entryData, stringSetterMap, Function.identity(), entry) ||
+                mapTo(entryData, integerSetterMap, this::toInteger, entry) ||
+                mapTo(entryData, dateSetterMap, this::toLocalDate, entry)) {
+                LOGGER.trace("Mapped: {}: {}", entry.getKey(), entry.getValue());
+            } else {
+                LOGGER.warn("Unable to map: {}, {}", entry.getKey(), entry.getValue());
             }
-            t = t.getCause();
         }
-        throw exception;
+        return entryData;
+    }
+
+    private <T> boolean mapTo(EntryData entry, Map<String,BiConsumer<EntryData,T>> setterMap, Function<String,T> converter, Map.Entry<String,String> pair) {
+        return Optional.ofNullable(setterMap.get(pair.getKey()))
+            .map(setter -> {
+                T value = converter.apply(pair.getValue());
+                setter.accept(entry, value);
+                return true;
+            })
+            .orElse(false);
+    }
+
+    private Integer toInteger(String value) {
+        return Integer.parseInt(value.replaceAll("[^0-9]", "").replaceAll("^$", "0"));
+    }
+
+    private LocalDate toLocalDate(String value) {
+        try {
+            return LocalDate.parse(value, DateTimeFormatter.ISO_LOCAL_DATE);
+        } catch (DateTimeException exception) {
+            return LocalDate.parse(value, DateTimeFormatter.ofPattern("yyyyMMdd"));
+        }
     }
 }

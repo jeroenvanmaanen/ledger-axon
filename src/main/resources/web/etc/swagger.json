@@ -77,7 +77,13 @@
         "description": {
           "type": "string"
         },
+        "hidden": {
+          "type": "boolean"
+        },
         "id": {
+          "type": "string"
+        },
+        "jar": {
           "type": "string"
         },
         "kind": {
@@ -239,7 +245,7 @@
         ]
       }
     },
-    "/entry/upload": {
+    "/entry/upload/{format}": {
       "post": {
         "consumes": [
           "multipart/form-data"
@@ -247,6 +253,24 @@
         "description": "Upload new Entries",
         "operationId": "uploadEntries",
         "parameters": [
+          {
+            "description": "Format of the CSV file (see org.apache.commons.csv.CSVFormat#Predefined)",
+            "enum": [
+              "Default",
+              "Excel",
+              "InformixUnload",
+              "InformixUnloadCsv",
+              "MySQL",
+              "Oracle",
+              "PostgreSQLCsv",
+              "PostgreSQLText",
+              "RFC4180",
+              "TDF"
+            ],
+            "in": "path",
+            "name": "format",
+            "type": "string"
+          },
           {
             "description": "The data to upload",
             "in": "formData",

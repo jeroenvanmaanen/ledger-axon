@@ -158,7 +158,7 @@ paths:
       responses:
         200:
           description: Successful operation
-  /entry/upload:
+  /entry/upload/{format}:
     post:
       tags:
       - Ledger
@@ -167,6 +167,21 @@ paths:
       consumes:
       - multipart/form-data
       parameters:
+      - in: path
+        name: format
+        description: Format of the CSV file (see org.apache.commons.csv.CSVFormat#Predefined)
+        type: string
+        enum:
+        - Default
+        - Excel
+        - InformixUnload
+        - InformixUnloadCsv
+        - MySQL
+        - Oracle
+        - PostgreSQLCsv
+        - PostgreSQLText
+        - RFC4180
+        - TDF
       - in: formData
         name: data
         description: The data to upload
@@ -214,6 +229,8 @@ definitions:
         type: string
       account:
         type: string
+      jar:
+        type: string
       contraAccount:
         type: string
       code:
@@ -226,6 +243,8 @@ definitions:
         type: string
       remarks:
         type: string
+      hidden:
+        type: boolean
   LabelData:
     type: object
     properties:

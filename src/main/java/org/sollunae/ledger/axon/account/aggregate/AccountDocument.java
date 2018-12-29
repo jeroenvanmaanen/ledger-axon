@@ -1,4 +1,4 @@
-package org.sollunae.ledger.axon.compound.aggregate;
+package org.sollunae.ledger.axon.account.aggregate;
 
 import lombok.Builder;
 import lombok.Value;

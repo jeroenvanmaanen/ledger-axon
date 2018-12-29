@@ -44,13 +44,14 @@ public class Entry {
     @CommandHandler
     public Entry(CreateEntryCommand createCommand, MongoTemplate mongoTemplate) {
         id = createCommand.getId();
-        LOGGER.info("Create entry: {}: Mongo template: {}", id, mongoTemplate);
+        LOGGER.trace("Create entry: {}: Mongo template: {}", id, mongoTemplate);
         EntryData data = createCommand.getEntry();
         try {
             mongoTemplate.insert(UniqueEntryDocument.builder().aggregateId(id).uniqueKey(createUniqueKey(data)).build());
         } catch (RuntimeException exception) {
             throw new RuntimeException("Could not insert unique key document", exception);
         }
+        data.setId(id);
         apply(EntryCreatedEvent.builder().id(id).data(data).build());
     }
 
