@@ -147,6 +147,28 @@ paths:
           description: Compound Transaction created
           schema:
             type: string
+  /compound/{id}/member:
+    post:
+      tags:
+      - Ledger
+      description: Add a new member to the Compound Transaction
+      operationId: addMemberToCompound
+      consumes:
+      - application/json
+      parameters:
+      - in: path
+        name: id
+        description: The Id of the Compound Transaction to add to
+        required: true
+        type: string
+      - in: body
+        name: member
+        description: The member to add
+        schema:
+          $ref: "#/definitions/CompoundMemberData"
+      responses:
+        200:
+          description: Successful operation
   /account/upload:
     post:
       tags:
@@ -275,10 +297,23 @@ definitions:
     properties:
       id:
         type: string
-      entryIds:
+      members:
         type: array
         items:
-          type: string
+          $ref: "#/definitions/CompoundMemberData"
+  CompoundMemberData:
+    type: object
+    properties:
+      id:
+        type: string
+      key:
+        type: string
+      amountCents:
+        type: integer
+      jar:
+        type: string
+      contraJar:
+        type: string
   CompoundReference:
     type: object
     required:

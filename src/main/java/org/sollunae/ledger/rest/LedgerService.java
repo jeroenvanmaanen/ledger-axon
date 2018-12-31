@@ -13,7 +13,10 @@ import org.sollunae.ledger.axon.compound.command.CreateCompoundCommand;
 import org.sollunae.ledger.axon.entry.command.CreateEntryCommand;
 import org.sollunae.ledger.axon.entry.command.EntryAddToCompoundCommand;
 import org.sollunae.ledger.axon.entry.command.EntryRemoveFromCompoundCommand;
+import org.sollunae.ledger.axon.entry.persistence.EntryDocument;
+import org.sollunae.ledger.axon.entry.persistence.LedgerEntryRepository;
 import org.sollunae.ledger.model.AccountData;
+import org.sollunae.ledger.model.CompoundMemberData;
 import org.sollunae.ledger.model.EntryData;
 import org.sollunae.ledger.model.JarData;
 import org.springframework.http.HttpStatus;
@@ -31,20 +34,24 @@ import java.util.*;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static org.sollunae.ledger.util.StreamUtil.asStream;
+import static org.sollunae.ledger.util.StringUtil.isNotEmpty;
 
 @Component
 public class LedgerService implements LedgerApiDelegate {
     private static final Logger LOGGER = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
     private final CommandGateway commandGateway;
+    private final LedgerEntryRepository entryRepository;
     private final Map<String,CSVFormat> csvFormatMap = new HashMap<>();
     private final Map<String, BiConsumer<EntryData,String>> stringSetterMap = new HashMap<>();
     private final Map<String, BiConsumer<EntryData,LocalDate>> dateSetterMap = new HashMap<>();
 
-    public LedgerService(CommandGateway commandGateway) {
+    public LedgerService(CommandGateway commandGateway, LedgerEntryRepository entryRepository) {
         this.commandGateway = commandGateway;
+        this.entryRepository = entryRepository;
         for (CSVFormat.Predefined csvFormat : CSVFormat.Predefined.values()) {
             csvFormatMap.put(csvFormat.name(), csvFormat.getFormat());
         }
@@ -129,6 +136,36 @@ public class LedgerService implements LedgerApiDelegate {
             .id(id)
             .build();
         commandGateway.sendAndWait(GenericCommandMessage.asCommandMessage(entryRemoveFromCompoundCommand));
+        return ResponseEntity.ok(null);
+    }
+
+    @Override
+    public ResponseEntity<Void> addMemberToCompound(String compoundId, CompoundMemberData member) {
+        EntryDocument entry = null;
+        if (isNotEmpty(member.getId())) {
+            entry = entryRepository.findById(member.getId()).orElse(null);
+        } else if (isNotEmpty(member.getKey())) {
+            entry = Optional.ofNullable(entryRepository.findByDataKey(member.getKey()))
+                .map(Collection::stream)
+                .flatMap(Stream::findFirst)
+                .orElse(null);
+        }
+        if (entry == null) {
+            LOGGER.warn("Not found: {}: {}", member.getId(), member.getKey());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
+        } else {
+            if (member.getAmountCents() != null && !Objects.equals(member.getAmountCents(), entry.getData().getAmountCents())) {
+                LOGGER.warn("Amount mismatch: {}: {}: {}: {}", member.getId(), member.getKey(), member.getAmountCents(), entry.getData().getAmountCents());
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
+            } else if (isNotEmpty(member.getJar()) && !Objects.equals(member.getJar(), entry.getData().getJar())) {
+                LOGGER.warn("JAR mismatch: {}: {}: {}: {}", member.getId(), member.getKey(), member.getJar(), entry.getData().getJar());
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
+            } else if (isNotEmpty(member.getContraJar()) && !Objects.equals(member.getContraJar(), entry.getData().getContraJar())) {
+                LOGGER.warn("JAR mismatch: {}: {}: {}: {}", member.getId(), member.getKey(), member.getJar(), entry.getData().getJar());
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
+            }
+            addEntryToCompound(entry.getId(), compoundId);
+        }
         return ResponseEntity.ok(null);
     }
 

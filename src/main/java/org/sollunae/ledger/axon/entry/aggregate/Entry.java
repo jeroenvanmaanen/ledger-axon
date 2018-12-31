@@ -17,6 +17,8 @@ import org.sollunae.ledger.axon.entry.command.EntryRemoveFromCompoundCommand;
 import org.sollunae.ledger.axon.entry.event.EntryCompoundAddedEvent;
 import org.sollunae.ledger.axon.entry.event.EntryCompoundRemovedEvent;
 import org.sollunae.ledger.axon.entry.event.EntryCreatedEvent;
+import org.sollunae.ledger.axon.entry.persistence.UniqueEntryDocument;
+import org.sollunae.ledger.model.CompoundMemberData;
 import org.sollunae.ledger.model.EntryData;
 import org.springframework.data.mongodb.core.MongoTemplate;
 
@@ -67,9 +69,15 @@ public class Entry {
         if (Objects.equals(compoundId, this.compoundId)) {
             return;
         }
+        CompoundMemberData member = new CompoundMemberData();
+        member.setId(id);
+        member.setKey(data.getKey());
+        member.setAmountCents(data.getAmountCents());
+        member.setJar(data.getJar());
+        member.setContraJar(data.getContraJar());
         Object compoundAddEntryCommand = CompoundAddEntryCommand.builder()
             .id(compoundId)
-            .entryId(id)
+            .member(member)
             .build();
         commandGateway.sendAndWait(compoundAddEntryCommand);
         Object entryCompoundAddedEvent = EntryCompoundAddedEvent.builder()

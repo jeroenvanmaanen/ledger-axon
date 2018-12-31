@@ -6,7 +6,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.sollunae.ledger.axon.account.aggregate.AccountDocument;
 import org.sollunae.ledger.axon.entry.aggregate.Entry;
-import org.sollunae.ledger.axon.entry.aggregate.EntryDocument;
+import org.sollunae.ledger.axon.entry.persistence.EntryDocument;
 import org.sollunae.ledger.axon.entry.event.EntryCreatedEvent;
 import org.sollunae.ledger.model.AccountData;
 import org.sollunae.ledger.model.EntryData;

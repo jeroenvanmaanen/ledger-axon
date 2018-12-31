@@ -1,70 +1,44 @@
-{
-	"_id" : "5bc655fb514a30ae94b8ba96",
-	"balance" : {
-		"T" : -3200,
-		"M" : 0,
-		"F" : 3200
-	},
-	"balanceValid" : "no",
-	"compoundRef" : "",
-	"intendedJar" : "T",
-	"label" : "",
-	"transactions" : [
+	"key" : "5bc655fb514a30ae94b8ba96",
+	"members" : [
 		{
-		"_id" : "5bd5b6efe03130243ca299a9",
 		"key" : "2018-01-14_19",
 		"date" : null,
 		"jar" : "T",
 		"contraJar" : "M",
-		"amount" : -3200
+		"amountCents" : -3200
 	},
 		{
-		"_id" : "5bd5b6f0e0313071cba299ce",
 		"key" : "2018-01-15_32",
 		"date" : null,
 		"jar" : "M",
 		"contraJar" : "F",
-		"amount" : -3200
+		"amountCents" : -3200
 	}
 	]
 }
 ---
-{
-	"_id" : "5bc65cde514a307dccb8ba98",
-	"balance" : {
-		"T" : -22500,
-		"M" : 0,
-		"F" : 0,
-		"*" : 22500
-	},
-	"balanceValid" : "yes",
-	"compoundRef" : null,
-	"intendedJar" : "T",
-	"label" : "",
-	"transactions" : [
+	"key" : "5bc65cde514a307dccb8ba98",
+	"members" : [
 		{
-		"_id" : "5bd5b6eee031306065a29996",
 		"key" : "2018-01-13_2",
 		"date" : null,
 		"jar" : "T",
 		"contraJar" : "M",
-		"amount" : -22500
+		"amountCents" : -22500
 	},
 		{
-		"_id" : "5bd5b6f0e031304232a299cd",
 		"key" : "2018-01-15_31",
 		"date" : null,
 		"jar" : "M",
 		"contraJar" : "F",
-		"amount" : -22500
+		"amountCents" : -22500
 	},
 		{
-		"_id" : "5bd5b6efe0313046f4a299b2",
 		"key" : "2018-01-15_4",
 		"date" : null,
 		"jar" : "F",
 		"contraJar" : "*",
-		"amount" : -22500
+		"amountCents" : -22500
 	}
 	]
 }

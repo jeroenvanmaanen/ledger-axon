@@ -1,4 +1,4 @@
-package org.sollunae.ledger.axon.entry.aggregate;
+package org.sollunae.ledger.axon.entry.persistence;
 
 import lombok.Builder;
 import lombok.Value;

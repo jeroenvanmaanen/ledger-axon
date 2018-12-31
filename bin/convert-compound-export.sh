@@ -11,11 +11,23 @@ Darwin*)
 esac
 export SED_EXT
 
+TAB="$(echo -en '\011')"
+
 cat "$@" \
     | sed "${SED_EXT}" \
         -e '/^[}],/a\
 ---' \
         -e '/^[}],/s/,//' \
+        -e "/^${TAB}\"_id\"/s/_id/key/" \
+        -e '/\"_id\"/d' \
         -e 's/NumberInt[(](-?[0-9]*)[)]/\1/g' \
         -e 's/ObjectId[(]("[^"]*")[)]/\1/g' \
-        -e 's/("amount" *: *)"(-?[0-9]*)"/\1\2/'
+        -e 's/("amount" *: *)"(-?[0-9]*)"/\1\2/' \
+        -e 's/"transactions"/"members"/' \
+        -e 's/"amount"/"amountCents"/' \
+        -e "/^${TAB}\"/s/^/|/" \
+        -e '/[{]/s/^/|/' \
+    | tr '|\012' '\012|' \
+    | egrep  '"(key|members)"' \
+    | tr '|\012' '\012|' \
+    | sed -e 's/^[|]//'

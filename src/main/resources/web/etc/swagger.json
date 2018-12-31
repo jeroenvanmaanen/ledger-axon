@@ -29,13 +29,33 @@
     },
     "CompoundData": {
       "properties": {
-        "entryIds": {
+        "id": {
+          "type": "string"
+        },
+        "members": {
           "items": {
-            "type": "string"
+            "$ref": "#/definitions/CompoundMemberData"
           },
           "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "CompoundMemberData": {
+      "properties": {
+        "amountCents": {
+          "type": "integer"
+        },
+        "contraJar": {
+          "type": "string"
         },
         "id": {
+          "type": "string"
+        },
+        "jar": {
+          "type": "string"
+        },
+        "key": {
           "type": "string"
         }
       },
@@ -221,6 +241,40 @@
             "schema": {
               "type": "string"
             }
+          }
+        },
+        "tags": [
+          "Ledger"
+        ]
+      }
+    },
+    "/compound/{id}/member": {
+      "post": {
+        "consumes": [
+          "application/json"
+        ],
+        "description": "Add a new member to the Compound Transaction",
+        "operationId": "addMemberToCompound",
+        "parameters": [
+          {
+            "description": "The Id of the Compound Transaction to add to",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "description": "The member to add",
+            "in": "body",
+            "name": "member",
+            "schema": {
+              "$ref": "#/definitions/CompoundMemberData"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful operation"
           }
         },
         "tags": [

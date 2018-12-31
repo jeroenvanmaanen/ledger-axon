@@ -14,6 +14,7 @@ import org.sollunae.ledger.axon.compound.command.CreateCompoundCommand;
 import org.sollunae.ledger.axon.compound.event.CompoundCreatedEvent;
 import org.sollunae.ledger.axon.compound.event.CompoundEntryAddedEvent;
 import org.sollunae.ledger.axon.compound.event.CompoundEntryRemovedEvent;
+import org.sollunae.ledger.model.CompoundMemberData;
 
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
@@ -47,16 +48,24 @@ public class Compound {
 
     @CommandHandler
     public void handle(CompoundAddEntryCommand compoundAddEntryCommand) {
-        String entryId = compoundAddEntryCommand.getEntryId();
+        CompoundMemberData member = compoundAddEntryCommand.getMember();
+        if (member == null) {
+            return;
+        }
+        String entryId = member.getId();
         if (!entryIds.contains(entryId)) {
             entryIds.add(entryId);
-            apply(CompoundEntryAddedEvent.builder().compoundId(id).entryId(entryId).build());
+            apply(CompoundEntryAddedEvent.builder().compoundId(id).member(member).build());
         }
     }
 
     @EventSourcingHandler
     public void on(CompoundEntryAddedEvent compoundEntryAddedEvent) {
-        String entryId = compoundEntryAddedEvent.getEntryId();
+        CompoundMemberData member = compoundEntryAddedEvent.getMember();
+        if (member == null) {
+            return;
+        }
+        String entryId = member.getId();
         if (!entryIds.contains(entryId)) {
             entryIds.add(entryId);
         }
