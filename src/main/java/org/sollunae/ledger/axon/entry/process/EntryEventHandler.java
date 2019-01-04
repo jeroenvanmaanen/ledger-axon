@@ -1,11 +1,14 @@
 package org.sollunae.ledger.axon.entry.process;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import org.axonframework.commandhandling.gateway.CommandGateway;
 import org.axonframework.eventhandling.EventHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.sollunae.ledger.axon.account.aggregate.AccountDocument;
 import org.sollunae.ledger.axon.entry.aggregate.Entry;
+import org.sollunae.ledger.axon.entry.command.EntryUpdateDataCommand;
+import org.sollunae.ledger.axon.entry.event.EntryCompoundAddedEvent;
+import org.sollunae.ledger.axon.entry.event.EntryDataUpdatedEvent;
 import org.sollunae.ledger.axon.entry.persistence.EntryDocument;
 import org.sollunae.ledger.axon.entry.event.EntryCreatedEvent;
 import org.sollunae.ledger.model.AccountData;
@@ -27,7 +30,7 @@ public class EntryEventHandler {
     private static final String CREDIT = "Credit";
 
     @EventHandler
-    public void on(EntryCreatedEvent entryCreatedEvent, MongoTemplate mongoTemplate, ObjectMapper objectMapper) {
+    public void on(EntryCreatedEvent entryCreatedEvent, MongoTemplate mongoTemplate, CommandGateway commandGateway) {
         EntryData entry = entryCreatedEvent.getData();
 
         AccountDocument thisAccount = findAccount(entry.getAccount(), mongoTemplate);
@@ -52,16 +55,14 @@ public class EntryEventHandler {
             LOGGER.info("Created entry: {}: {}: {},{}{}", key, thisJar, cents/100, justCents, hide ? " (hidden)" : "");
         }
 
-        Query query = Query.query(Criteria.where("id").is(entry.getId()));
-        Update update = Update.update("id", entry.getId()).set("data", entry).set("_class", EntryDocument.class.getCanonicalName());
-        mongoTemplate.upsert(query, update, Entry.class);
+        commandGateway.send(EntryUpdateDataCommand.builder().id(entryCreatedEvent.getId()).data(entry).build());
     }
 
     private String getJar(AccountDocument account) {
         return Optional.ofNullable(account)
             .map(AccountDocument::getData)
             .map(AccountData::getKey)
-            .orElse("?");
+            .orElse("*");
     }
 
     private Integer getAmountCents(EntryData entry) {
@@ -78,5 +79,22 @@ public class EntryEventHandler {
     private AccountDocument findAccount(String accountId, MongoTemplate mongoTemplate) {
         Query query = Query.query(Criteria.where("id").is(accountId));
         return mongoTemplate.findOne(query, AccountDocument.class);
+    }
+
+    @EventHandler
+    public void on(EntryDataUpdatedEvent event, MongoTemplate mongoTemplate) {
+        EntryData entry = event.getData();
+        Query query = Query.query(Criteria.where("id").is(entry.getId()));
+        Update update = Update.update("id", entry.getId()).set("data", entry).set("_class", EntryDocument.class.getCanonicalName());
+        mongoTemplate.upsert(query, update, Entry.class);
+    }
+
+    @EventHandler
+    public void on(EntryCompoundAddedEvent event, MongoTemplate mongoTemplate) {
+        String entryId = event.getEntryId();
+        String compoundId = event.getCompoundId();
+        Query query = Query.query(Criteria.where("id").is(entryId));
+        Update update = Update.update("id", entryId).set("compoundId", compoundId).set("_class", EntryDocument.class.getCanonicalName());
+        mongoTemplate.upsert(query, update, Entry.class);
     }
 }

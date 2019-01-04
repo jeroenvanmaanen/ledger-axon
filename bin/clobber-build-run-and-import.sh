@@ -44,6 +44,8 @@ docker rm -f ledger-axon-mongodb
     curl -sS -X POST "http://localhost:8080/account/upload" -H "accept: application/json" -H "Content-Type: multipart/form-data" -F "file=@accounts-local.yaml"
     echo 'Importing entries' >&2
     curl -sS -X POST "http://localhost:8080/entry/upload/TDF" -H "accept: application/json" -H "Content-Type: multipart/form-data" -F "file=@transactions-local.tsv"
+    echo 'Importing compound samples' >&2
+    curl -sS -X POST "http://localhost:8080/compound/upload" -H "accept: application/json" -H "Content-Type: multipart/form-data" -F "file=@compound-local.yaml"
     echo 'Imported all' >&2
 
     wait "${PID_LEDGER}"

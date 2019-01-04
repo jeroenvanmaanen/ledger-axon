@@ -14,9 +14,11 @@ import org.sollunae.ledger.axon.compound.command.CompoundRemoveEntryCommand;
 import org.sollunae.ledger.axon.entry.command.CreateEntryCommand;
 import org.sollunae.ledger.axon.entry.command.EntryAddToCompoundCommand;
 import org.sollunae.ledger.axon.entry.command.EntryRemoveFromCompoundCommand;
+import org.sollunae.ledger.axon.entry.command.EntryUpdateDataCommand;
 import org.sollunae.ledger.axon.entry.event.EntryCompoundAddedEvent;
 import org.sollunae.ledger.axon.entry.event.EntryCompoundRemovedEvent;
 import org.sollunae.ledger.axon.entry.event.EntryCreatedEvent;
+import org.sollunae.ledger.axon.entry.event.EntryDataUpdatedEvent;
 import org.sollunae.ledger.axon.entry.persistence.UniqueEntryDocument;
 import org.sollunae.ledger.model.CompoundMemberData;
 import org.sollunae.ledger.model.EntryData;
@@ -27,6 +29,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static org.axonframework.modelling.command.AggregateLifecycle.apply;
@@ -69,6 +72,7 @@ public class Entry {
         if (Objects.equals(compoundId, this.compoundId)) {
             return;
         }
+        LOGGER.info("On handle entry add to compound command: data: {}", data.toString().replaceAll("[ \t\n]+", " "));
         CompoundMemberData member = new CompoundMemberData();
         member.setId(id);
         member.setKey(data.getKey());
@@ -112,6 +116,37 @@ public class Entry {
     @EventSourcingHandler
     public void on(EntryCompoundRemovedEvent entryCompoundRemovedEvent) {
         this.compoundId = null;
+    }
+
+    @CommandHandler
+    public void handle(EntryUpdateDataCommand command) {
+        EntryData commandData = command.getData();
+        if (differs(EntryData::getDate, commandData, data) ||
+            differs(EntryData::getKey, commandData, data) ||
+            differs(EntryData::getAccount, commandData, data) ||
+            differs(EntryData::getJar, commandData, data) ||
+            differs(EntryData::getAmount, commandData, data) ||
+            differs(EntryData::getAmountCents, commandData, data) ||
+            differs(EntryData::getDebetCredit, commandData, data) ||
+            differs(EntryData::getCode, commandData, data) ||
+            differs(EntryData::getKind, commandData, data) ||
+            differs(EntryData::getContraAccount, commandData, data) ||
+            differs(EntryData::getContraJar, commandData, data) ||
+            differs(EntryData::getDescription, commandData, data) ||
+            differs(EntryData::getRemarks, commandData, data)
+        ) {
+            commandData.setId(id);
+            apply(EntryDataUpdatedEvent.builder().id(id).data(commandData).build());
+        }
+    }
+
+    private <T> boolean differs(Function<EntryData,T> getter, EntryData object, EntryData other) {
+        return !Objects.equals(getter.apply(object), getter.apply(other));
+    }
+
+    @EventSourcingHandler
+    public void on(EntryDataUpdatedEvent event) {
+        data = event.getData();
     }
 
     private String createUniqueKey(EntryData entry) {

@@ -10,16 +10,18 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.sollunae.ledger.axon.compound.command.CompoundAddEntryCommand;
 import org.sollunae.ledger.axon.compound.command.CompoundRemoveEntryCommand;
+import org.sollunae.ledger.axon.compound.command.CompoundUpdateKeyCommand;
 import org.sollunae.ledger.axon.compound.command.CreateCompoundCommand;
 import org.sollunae.ledger.axon.compound.event.CompoundCreatedEvent;
 import org.sollunae.ledger.axon.compound.event.CompoundEntryAddedEvent;
 import org.sollunae.ledger.axon.compound.event.CompoundEntryRemovedEvent;
+import org.sollunae.ledger.axon.compound.event.CompoundKeyUpdatedEvent;
 import org.sollunae.ledger.model.CompoundMemberData;
 
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
+import java.util.Objects;
 
 import static org.axonframework.modelling.command.AggregateLifecycle.apply;
 
@@ -32,11 +34,12 @@ public class Compound {
     @AggregateIdentifier
     private String id;
 
+    private String key = null;
     private List<String> entryIds = new ArrayList<>();
 
     @CommandHandler
     public Compound(CreateCompoundCommand createCompoundCommand) {
-        id = UUID.randomUUID().toString();
+        id = createCompoundCommand.getId();
         LOGGER.info("Create compound: {}", id);
         apply(CompoundCreatedEvent.builder().id(id).build());
     }
@@ -44,6 +47,19 @@ public class Compound {
     @EventSourcingHandler
     public void on(CompoundCreatedEvent compoundCreatedEvent) {
         id = compoundCreatedEvent.getId();
+    }
+
+    @CommandHandler
+    public void handle(CompoundUpdateKeyCommand command) {
+        if (Objects.equals(key, command.getKey())) {
+            return;
+        }
+        apply(CompoundKeyUpdatedEvent.builder().compoundId(command.getId()).key(command.getKey()).build());
+    }
+
+    @EventSourcingHandler
+    public void on(CompoundKeyUpdatedEvent event) {
+        key = event.getKey();
     }
 
     @CommandHandler

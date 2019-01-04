@@ -18,16 +18,21 @@ cat "$@" \
         -e '/^[}],/a\
 ---' \
         -e '/^[}],/s/,//' \
-        -e "/^${TAB}\"_id\"/s/_id/key/" \
+        -e "s/^(${TAB}*)${TAB}/\\1        /" \
+        -e "s/^(${TAB}*)${TAB}/\\1        /" \
+        -e "s/^(${TAB}*)${TAB}/\\1        /" \
+        -e "s/^(${TAB}*)${TAB}/\\1        /" \
+        -e "/^        \"_id\"/s/_id/key/" \
         -e '/\"_id\"/d' \
+        -e '/\"date\"/d' \
         -e 's/NumberInt[(](-?[0-9]*)[)]/\1/g' \
         -e 's/ObjectId[(]("[^"]*")[)]/\1/g' \
         -e 's/("amount" *: *)"(-?[0-9]*)"/\1\2/' \
         -e 's/"transactions"/"members"/' \
         -e 's/"amount"/"amountCents"/' \
-        -e "/^${TAB}\"/s/^/|/" \
+        -e "/^        \"/s/^/|/" \
         -e '/[{]/s/^/|/' \
     | tr '|\012' '\012|' \
-    | egrep  '"(key|members)"' \
+    | egrep  '^([{]|.*"(key|members)")' \
     | tr '|\012' '\012|' \
     | sed -e 's/^[|]//'

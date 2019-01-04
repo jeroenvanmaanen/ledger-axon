@@ -14,5 +14,6 @@ public class CompoundDocument {
     @Id
     private String id;
 
+    private String key;
     private Map<String, CompoundMemberData> memberMap;
 }

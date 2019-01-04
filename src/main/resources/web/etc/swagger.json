@@ -32,6 +32,9 @@
         "id": {
           "type": "string"
         },
+        "key": {
+          "type": "string"
+        },
         "members": {
           "items": {
             "$ref": "#/definitions/CompoundMemberData"
@@ -240,6 +243,57 @@
             "description": "Compound Transaction created",
             "schema": {
               "type": "string"
+            }
+          }
+        },
+        "tags": [
+          "Ledger"
+        ]
+      }
+    },
+    "/compound/upload": {
+      "post": {
+        "consumes": [
+          "multipart/form-data"
+        ],
+        "description": "Upload new Compound Transactions",
+        "operationId": "uploadCompoundTransactions",
+        "parameters": [
+          {
+            "description": "The data to upload",
+            "in": "formData",
+            "name": "data",
+            "type": "file"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful operation"
+          }
+        },
+        "tags": [
+          "Ledger"
+        ]
+      }
+    },
+    "/compound/{compoundId}": {
+      "get": {
+        "description": "Get compound information",
+        "operationId": "getCompound",
+        "parameters": [
+          {
+            "description": "The Id of the Compound to retrieve",
+            "in": "path",
+            "name": "compoundId",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful operation",
+            "schema": {
+              "$ref": "#/definitions/CompoundData"
             }
           }
         },

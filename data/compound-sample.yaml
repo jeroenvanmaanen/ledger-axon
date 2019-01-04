@@ -1,45 +1,42 @@
-	"key" : "5bc655fb514a30ae94b8ba96",
-	"members" : [
-		{
-		"key" : "2018-01-14_19",
-		"date" : null,
-		"jar" : "T",
-		"contraJar" : "M",
-		"amountCents" : -3200
-	},
-		{
-		"key" : "2018-01-15_32",
-		"date" : null,
-		"jar" : "M",
-		"contraJar" : "F",
-		"amountCents" : -3200
-	}
-	]
+{
+        "key" : "5bc655fb514a30ae94b8ba96",
+        "members" : [
+                {
+                "key" : "2018-01-14_19",
+                "jar" : "T",
+                "contraJar" : "M",
+                "amountCents" : -3200
+        },
+                {
+                "key" : "2018-01-15_32",
+                "jar" : "M",
+                "contraJar" : "F",
+                "amountCents" : -3200
+        }
+        ]
 }
 ---
-	"key" : "5bc65cde514a307dccb8ba98",
-	"members" : [
-		{
-		"key" : "2018-01-13_2",
-		"date" : null,
-		"jar" : "T",
-		"contraJar" : "M",
-		"amountCents" : -22500
-	},
-		{
-		"key" : "2018-01-15_31",
-		"date" : null,
-		"jar" : "M",
-		"contraJar" : "F",
-		"amountCents" : -22500
-	},
-		{
-		"key" : "2018-01-15_4",
-		"date" : null,
-		"jar" : "F",
-		"contraJar" : "*",
-		"amountCents" : -22500
-	}
-	]
+{
+        "key" : "5bc65cde514a307dccb8ba98",
+        "members" : [
+                {
+                "key" : "2018-01-13_2",
+                "jar" : "T",
+                "contraJar" : "M",
+                "amountCents" : -22500
+        },
+                {
+                "key" : "2018-01-15_31",
+                "jar" : "M",
+                "contraJar" : "F",
+                "amountCents" : -22500
+        },
+                {
+                "key" : "2018-01-15_4",
+                "jar" : "F",
+                "contraJar" : "*",
+                "amountCents" : -22500
+        }
+        ]
 }
 ---
