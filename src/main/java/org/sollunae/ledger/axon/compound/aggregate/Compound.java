@@ -8,20 +8,13 @@ import org.axonframework.modelling.command.AggregateIdentifier;
 import org.axonframework.spring.stereotype.Aggregate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.sollunae.ledger.axon.compound.command.CompoundAddEntryCommand;
-import org.sollunae.ledger.axon.compound.command.CompoundRemoveEntryCommand;
-import org.sollunae.ledger.axon.compound.command.CompoundUpdateKeyCommand;
-import org.sollunae.ledger.axon.compound.command.CreateCompoundCommand;
-import org.sollunae.ledger.axon.compound.event.CompoundCreatedEvent;
-import org.sollunae.ledger.axon.compound.event.CompoundEntryAddedEvent;
-import org.sollunae.ledger.axon.compound.event.CompoundEntryRemovedEvent;
-import org.sollunae.ledger.axon.compound.event.CompoundKeyUpdatedEvent;
+import org.sollunae.ledger.axon.compound.command.*;
+import org.sollunae.ledger.axon.compound.event.*;
 import org.sollunae.ledger.model.CompoundMemberData;
 
 import java.lang.invoke.MethodHandles;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicLong;
 
 import static org.axonframework.modelling.command.AggregateLifecycle.apply;
 
@@ -35,7 +28,10 @@ public class Compound {
     private String id;
 
     private String key = null;
+    private String targetJar = "?";
     private List<String> entryIds = new ArrayList<>();
+    private Map<String,CompoundMemberData> members = new HashMap<>();
+    private Map<String,Long> balance = new HashMap<>();
 
     @CommandHandler
     public Compound(CreateCompoundCommand createCompoundCommand) {
@@ -62,6 +58,17 @@ public class Compound {
         key = event.getKey();
     }
 
+    public void handle(CompoundUpdateTargetJarCommand command) {
+        if (Objects.equals(targetJar, command.getTargetJar())) {
+            return;
+        }
+        apply(CompoundTargetJarUpdatedEvent.builder().compoundId(command.getId()).targetJar(command.getTargetJar()).build());
+    }
+
+    public void on(CompoundTargetJarUpdatedEvent event) {
+        targetJar = event.getTargetJar();
+    }
+
     @CommandHandler
     public void handle(CompoundAddEntryCommand compoundAddEntryCommand) {
         CompoundMemberData member = compoundAddEntryCommand.getMember();
@@ -69,6 +76,7 @@ public class Compound {
             return;
         }
         String entryId = member.getId();
+        members.put(entryId, member);
         if (!entryIds.contains(entryId)) {
             entryIds.add(entryId);
             apply(CompoundEntryAddedEvent.builder().compoundId(id).member(member).build());
@@ -82,6 +90,7 @@ public class Compound {
             return;
         }
         String entryId = member.getId();
+        members.put(entryId, member);
         if (!entryIds.contains(entryId)) {
             entryIds.add(entryId);
         }
@@ -90,8 +99,9 @@ public class Compound {
     @CommandHandler
     public void handle(CompoundRemoveEntryCommand compoundRemoveEntryCommand) {
         String entryId = compoundRemoveEntryCommand.getEntryId();
-        if (entryIds.contains(entryId)) {
-            entryIds.remove(entryId);
+        entryIds.remove(entryId);
+        if (members.containsKey(entryId)) {
+            members.remove(entryId);
             apply(CompoundEntryRemovedEvent.builder().compoundId(id).entryId(entryId).build());
         }
     }
@@ -100,5 +110,38 @@ public class Compound {
     public void on(CompoundEntryRemovedEvent compoundEntryRemovedEvent) {
         String entryId = compoundEntryRemovedEvent.getEntryId();
         entryIds.remove(entryId);
+        members.remove(entryId);
+    }
+
+    @CommandHandler
+    public void handle(CompoundRebalanceCommand command) {
+        Map<String, AtomicLong> counters = new HashMap<>();
+        for (CompoundMemberData member : members.values()) {
+            String thisJar = member.getJar();
+            String contraJar = member.getContraJar();
+            addAmount(counters, thisJar, member.getAmountCents());
+            addAmount(counters, contraJar, -member.getAmountCents());
+        }
+        Map<String,Long> newBalance = toBalance(counters);
+        if (!newBalance.equals(balance)) {
+            apply(CompoundBalanceUpdatedEvent.builder().compoundId(command.getId()).balance(newBalance).build());
+        }
+    }
+
+    private void addAmount(Map<String,AtomicLong> counters, String jar, Integer amountCents) {
+        if (!counters.containsKey(jar)) {
+            counters.put(jar, new AtomicLong());
+        }
+        counters.get(jar).addAndGet(amountCents.longValue());
+    }
+
+    private Map<String,Long> toBalance(Map<String,AtomicLong> counters) {
+        Map<String,Long> balance = new HashMap<>();
+        counters.forEach((key1, value) -> balance.put(key1, value.longValue()));
+        return balance;
+    }
+
+    public void on(CompoundBalanceUpdatedEvent event) {
+        balance = event.getBalance();
     }
 }

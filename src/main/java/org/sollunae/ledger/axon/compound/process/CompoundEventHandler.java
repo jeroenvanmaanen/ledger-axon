@@ -1,8 +1,11 @@
 package org.sollunae.ledger.axon.compound.process;
 
+import org.axonframework.commandhandling.gateway.CommandGateway;
+import org.axonframework.eventhandling.EventBus;
 import org.axonframework.eventhandling.EventHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.sollunae.ledger.axon.compound.command.CompoundRebalanceCommand;
 import org.sollunae.ledger.axon.compound.event.CompoundCreatedEvent;
 import org.sollunae.ledger.axon.compound.event.CompoundEntryAddedEvent;
 import org.sollunae.ledger.axon.compound.event.CompoundKeyUpdatedEvent;
@@ -26,14 +29,16 @@ public class CompoundEventHandler {
     }
 
     @EventHandler
-    public void on(CompoundEntryAddedEvent compoundEntryAddedEvent, MongoTemplate mongoTemplate) {
+    public void on(CompoundEntryAddedEvent compoundEntryAddedEvent, MongoTemplate mongoTemplate, CommandGateway commandGateway) {
+        String compoundId = compoundEntryAddedEvent.getCompoundId();
         CompoundMemberData member = compoundEntryAddedEvent.getMember();
         LOGGER.info("On compound entry added event: member: {}", member.toString().replaceAll("[ \t\n]+", " "));
-        Query query = Query.query(Criteria.where("id").is(compoundEntryAddedEvent.getCompoundId()));
+        Query query = Query.query(Criteria.where("id").is(compoundId));
         Update update = Update.update("memberMap." + member.getId(), member)
-            .set("_id", compoundEntryAddedEvent.getCompoundId())
+            .set("_id", compoundId)
             .set("_class", CompoundDocument.class.getCanonicalName());
         mongoTemplate.upsert(query, update, CompoundDocument.class);
+        commandGateway.send(CompoundRebalanceCommand.builder().id(compoundId).build());
     }
 
     @EventHandler
