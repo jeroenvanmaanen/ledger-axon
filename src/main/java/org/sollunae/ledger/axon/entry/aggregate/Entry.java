@@ -19,10 +19,9 @@ import org.sollunae.ledger.axon.entry.event.EntryCompoundAddedEvent;
 import org.sollunae.ledger.axon.entry.event.EntryCompoundRemovedEvent;
 import org.sollunae.ledger.axon.entry.event.EntryCreatedEvent;
 import org.sollunae.ledger.axon.entry.event.EntryDataUpdatedEvent;
-import org.sollunae.ledger.axon.entry.persistence.UniqueEntryDocument;
+import org.sollunae.ledger.axon.unique.process.UniqueKeyService;
 import org.sollunae.ledger.model.CompoundMemberData;
 import org.sollunae.ledger.model.EntryData;
-import org.springframework.data.mongodb.core.MongoTemplate;
 
 import java.lang.invoke.MethodHandles;
 import java.time.format.DateTimeFormatter;
@@ -47,14 +46,15 @@ public class Entry {
     private String compoundId;
 
     @CommandHandler
-    public Entry(CreateEntryCommand createCommand, MongoTemplate mongoTemplate) {
+    public Entry(CreateEntryCommand createCommand, UniqueKeyService uniqueKeyService) {
         id = createCommand.getId();
-        LOGGER.trace("Create entry: {}: Mongo template: {}", id, mongoTemplate);
+        LOGGER.trace("Create entry: {}: helper: {}", id, uniqueKeyService);
         EntryData data = createCommand.getEntry();
+        String key = createUniqueKey(data);
         try {
-            mongoTemplate.insert(UniqueEntryDocument.builder().aggregateId(id).uniqueKey(createUniqueKey(data)).build());
+            uniqueKeyService.assertUnique(getClass(), key);
         } catch (RuntimeException exception) {
-            throw new RuntimeException("Could not insert unique key document", exception);
+            throw new IllegalStateException("Entry key already exists: '" + key + "'", exception);
         }
         data.setId(id);
         apply(EntryCreatedEvent.builder().id(id).data(data).build());
