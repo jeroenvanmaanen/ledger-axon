@@ -10,8 +10,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.sollunae.ledger.axon.account.command.CreateAccountCommand;
 import org.sollunae.ledger.axon.account.event.AccountCreatedEvent;
+import org.sollunae.ledger.axon.unique.process.UniqueKeyService;
 import org.sollunae.ledger.model.AccountData;
-import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.util.StringUtils;
 
 import java.lang.invoke.MethodHandles;
@@ -30,17 +30,18 @@ public class Account {
     private AccountData data;
 
     @CommandHandler
-    public Account(CreateAccountCommand createCommand, MongoTemplate mongoTemplate) {
+    public Account(CreateAccountCommand createCommand, UniqueKeyService uniqueKeyService) {
         AccountData data = createCommand.getData();
         id = data.getAccount();
-        LOGGER.info("Create account: {}: Mongo template: {}", id, mongoTemplate);
+        String key = data.getKey();
+        LOGGER.info("Create account: {}: unique key service: {}", id, uniqueKeyService);
         if (StringUtils.isEmpty(data.getLabel())) {
-            data.setLabel(data.getKey());
+            data.setLabel(key);
         }
         try {
-            mongoTemplate.insert(AccountDocument.builder().id(id).data(data).build());
+            uniqueKeyService.assertUnique(getClass().toString(), key);
         } catch (RuntimeException exception) {
-            throw new RuntimeException("Could not insert unique key document", exception);
+            throw new IllegalStateException("Entry key already exists: '" + key + "'", exception);
         }
         apply(AccountCreatedEvent.builder().id(id).data(data).build());
     }

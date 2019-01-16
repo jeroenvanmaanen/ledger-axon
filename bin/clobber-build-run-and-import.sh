@@ -5,6 +5,11 @@ set -e
 BIN="$(cd "$(dirname "$0")" ; pwd)"
 PROJECT="$(dirname "${BIN}")"
 
+if [[ ".$1" = '.--tee' ]]
+then
+    exec > >(tee "$2") 2>&1
+fi
+
 "${BIN}/swagger-yaml-to-json.sh"
 
 function waitForServerReady() {
@@ -30,13 +35,14 @@ docker rm -f ledger-axon-mongodb
 
 "${BIN}/docker-run-axon-server.sh"
 "${BIN}/docker-run-mongodb.sh"
+sleep 5 # Wait for Axon Server to start
 
 (
     cd "${PROJECT}"
     ./mvnw clean package
     java -jar target/ledger-axon-0.0.1-SNAPSHOT.jar --spring.output.ansi.enabled=ALWAYS &
     PID_LEDGER="$!"
-    trap "echo ; kill '${PID_LEDGER}' ; sleep 2" EXIT
+    trap "echo ; kill '${PID_LEDGER}' ; sleep 3" EXIT
 
     cd data
     waitForServerReady 'http://localhost:8080/actuator/health'

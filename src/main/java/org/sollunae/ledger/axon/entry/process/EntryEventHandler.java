@@ -4,7 +4,7 @@ import org.axonframework.commandhandling.gateway.CommandGateway;
 import org.axonframework.eventhandling.EventHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.sollunae.ledger.axon.account.aggregate.AccountDocument;
+import org.sollunae.ledger.axon.account.persistence.AccountDocument;
 import org.sollunae.ledger.axon.entry.aggregate.Entry;
 import org.sollunae.ledger.axon.entry.command.EntryUpdateDataCommand;
 import org.sollunae.ledger.axon.entry.event.EntryCompoundAddedEvent;
