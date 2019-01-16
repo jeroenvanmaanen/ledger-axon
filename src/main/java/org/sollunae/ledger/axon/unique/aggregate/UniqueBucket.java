@@ -19,6 +19,9 @@ import org.springframework.data.util.Pair;
 
 import java.lang.invoke.MethodHandles;
 import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static org.axonframework.modelling.command.AggregateLifecycle.apply;
 
@@ -53,10 +56,14 @@ public class UniqueBucket {
         Pair<Object,String> pair = Pair.of(domain, key);
         if (existingKeys.contains(pair)) {
             throw new IllegalStateException("Key already exists: " + key);
+        } else if (LOGGER.isTraceEnabled()) {
+            existingKeys.forEach(p -> traceCompare(pair, p));
         }
+        LOGGER.debug("Add unique key: existing keys size: {}", existingKeys.size());
         String hash = command.getHash();
         if (hash.length() <= childKeyPrefixLength || (children.isEmpty() && existingKeys.size() < maxKeys)) {
             existingKeys.add(pair);
+            LOGGER.debug("Key added: {}: {}: {}: {}", id, domain, key, hash);
             apply(UniqueKeyAddedEvent.builder()
                 .bucketId(id)
                 .domain(domain)
@@ -74,6 +81,20 @@ public class UniqueBucket {
                 .hash(remainderKey)
                 .build());
         }
+    }
+
+    private <X,Y> void traceCompare(Pair<X,Y> p1, Pair<X,Y> p2) {
+        String info = Stream.<Function<Pair<X,Y>,?>>of(Function.identity(), Pair::getFirst, Pair::getSecond)
+            .map(f -> {
+                Object left = f.apply(p1);
+                Object right = f.apply(p2);
+                return Stream.of(left,left.hashCode(),right,right.hashCode(),Objects.equals(left,right))
+                    .map(String::valueOf)
+                    .collect(Collectors.joining(": "));
+            })
+            .map(x -> "\n" + x)
+            .collect(Collectors.joining(": "));
+        LOGGER.trace("[{} ]", info);
     }
 
     private String getChildId(String childKey, CommandGateway commandGateway) {
@@ -102,16 +123,30 @@ public class UniqueBucket {
         id = event.getId();
         maxKeys = event.getMaxKeys();
         childKeyPrefixLength = event.getChildKeyPrefixLength();
+        LOGGER.debug("Event source: {}: {}: {}: {}", UniqueBucketAddedEvent.class, id, maxKeys, childKeyPrefixLength);
     }
 
     @EventSourcingHandler
     public void on(UniqueKeyAddedEvent event) {
         Pair<Object,String> pair = Pair.of(event.getDomain(), event.getKey());
         existingKeys.add(pair);
+        if (LOGGER.isDebugEnabled()) {
+            String keys = existingKeys.stream()
+                .map(p -> String.valueOf(p.getFirst() + ":" + p.getSecond()))
+                .collect(Collectors.joining(", "));
+            LOGGER.debug("Event source: {}: {}: [{}]", UniqueKeyAddedEvent.class, pair.getSecond(), keys);
+        }
     }
 
     @EventSourcingHandler
     public void on(UniqueBucketChildAddedEvent event) {
         children.put(event.getKeyPrefix(), event.getChildId());
+        if (LOGGER.isDebugEnabled()) {
+            String childrenList = children.entrySet().stream()
+                .map(e -> String.valueOf(e.getKey() + ":" + e.getValue()))
+                .collect(Collectors.joining(", "));
+            LOGGER.debug("Event source: {}: {}: {}: [{}]",
+                UniqueBucketChildAddedEvent.class, id, event.getKeyPrefix(), childrenList);
+        }
     }
 }

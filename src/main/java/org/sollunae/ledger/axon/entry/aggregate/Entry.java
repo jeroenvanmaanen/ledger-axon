@@ -52,7 +52,7 @@ public class Entry {
         EntryData data = createCommand.getEntry();
         String key = createUniqueKey(data);
         try {
-            uniqueKeyService.assertUnique(getClass(), key);
+            uniqueKeyService.assertUnique(getClass().toString(), key);
         } catch (RuntimeException exception) {
             throw new IllegalStateException("Entry key already exists: '" + key + "'", exception);
         }

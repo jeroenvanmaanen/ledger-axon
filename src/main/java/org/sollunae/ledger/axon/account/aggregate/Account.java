@@ -39,7 +39,7 @@ public class Account {
             data.setLabel(key);
         }
         try {
-            uniqueKeyService.assertUnique(getClass(), key);
+            uniqueKeyService.assertUnique(getClass().toString(), key);
         } catch (RuntimeException exception) {
             throw new IllegalStateException("Entry key already exists: '" + key + "'", exception);
         }
