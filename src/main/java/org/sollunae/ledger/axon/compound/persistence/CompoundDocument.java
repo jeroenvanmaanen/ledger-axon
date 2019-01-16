@@ -16,4 +16,7 @@ public class CompoundDocument {
 
     private String key;
     private Map<String, CompoundMemberData> memberMap;
+    private Map<String,Long> balance;
+    private String targetJar;
+    private Boolean balanceMatchesTarget;
 }

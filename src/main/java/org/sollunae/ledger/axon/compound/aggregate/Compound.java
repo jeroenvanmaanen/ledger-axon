@@ -15,6 +15,7 @@ import org.sollunae.ledger.model.CompoundMemberData;
 import java.lang.invoke.MethodHandles;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Collectors;
 
 import static org.axonframework.modelling.command.AggregateLifecycle.apply;
 
@@ -32,6 +33,7 @@ public class Compound {
     private List<String> entryIds = new ArrayList<>();
     private Map<String,CompoundMemberData> members = new HashMap<>();
     private Map<String,Long> balance = new HashMap<>();
+    private String affected = "";
 
     @CommandHandler
     public Compound(CreateCompoundCommand createCompoundCommand) {
@@ -58,11 +60,16 @@ public class Compound {
         key = event.getKey();
     }
 
+    @CommandHandler
     public void handle(CompoundUpdateTargetJarCommand command) {
         if (Objects.equals(targetJar, command.getTargetJar())) {
             return;
         }
-        apply(CompoundTargetJarUpdatedEvent.builder().compoundId(command.getId()).targetJar(command.getTargetJar()).build());
+        apply(CompoundTargetJarUpdatedEvent.builder()
+            .compoundId(command.getId())
+            .targetJar(command.getTargetJar())
+            .balanceMatchesTarget(Objects.equals(affected, targetJar))
+            .build());
     }
 
     public void on(CompoundTargetJarUpdatedEvent event) {
@@ -123,9 +130,24 @@ public class Compound {
             addAmount(counters, contraJar, -member.getAmountCents());
         }
         Map<String,Long> newBalance = toBalance(counters);
+        affected = computeAffected(newBalance);
         if (!newBalance.equals(balance)) {
-            apply(CompoundBalanceUpdatedEvent.builder().compoundId(command.getId()).balance(newBalance).build());
+            apply(CompoundBalanceUpdatedEvent.builder()
+                .compoundId(command.getId())
+                .balance(newBalance)
+                .affected(affected)
+                .balanceMatchesTarget(Objects.equals(affected, targetJar))
+                .build());
         }
+    }
+
+    private String computeAffected(Map<String,Long> balance) {
+        List<String> affectedJars = balance.entrySet().stream()
+            .filter(e -> e.getValue() != 0)
+            .map(Map.Entry::getKey)
+            .filter(k -> !k.equals("*"))
+            .collect(Collectors.toList());
+        return affectedJars.size() == 1 ? affectedJars.get(0) : "*";
     }
 
     private void addAmount(Map<String,AtomicLong> counters, String jar, Integer amountCents) {
@@ -141,7 +163,9 @@ public class Compound {
         return balance;
     }
 
+    @EventSourcingHandler
     public void on(CompoundBalanceUpdatedEvent event) {
         balance = event.getBalance();
+        affected = event.getAffected();
     }
 }
