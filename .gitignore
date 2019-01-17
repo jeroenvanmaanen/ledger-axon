@@ -1,6 +1,6 @@
 /data/**/*-local.*
 /.idea/
-/target/
+/**/target/
 /tmp/
 
 # Compiled class file
