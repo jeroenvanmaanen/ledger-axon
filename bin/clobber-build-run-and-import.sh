@@ -42,7 +42,7 @@ sleep 5 # Wait for Axon Server to start
 (
     cd "${PROJECT}"
     ./mvnw clean package
-    java -jar target/ledger-axon-0.0.1-SNAPSHOT.jar --spring.output.ansi.enabled=ALWAYS &
+    java -jar core/target/ledger-axon-core-0.0.1-SNAPSHOT.jar --spring.output.ansi.enabled=ALWAYS &
     PID_LEDGER="$!"
     trap "echo ; kill '${PID_LEDGER}' ; sleep 3" EXIT
 

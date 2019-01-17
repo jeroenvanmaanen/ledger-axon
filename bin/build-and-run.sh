@@ -10,5 +10,5 @@ PROJECT="$(dirname "${BIN}")"
 (
     cd "${PROJECT}"
     ./mvnw clean package
-    java -jar target/ledger-axon-0.0.1-SNAPSHOT.jar
+    java -jar core/target/ledger-axon-core-0.0.1-SNAPSHOT.jar
 )

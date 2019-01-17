@@ -5,10 +5,10 @@ PROJECT="$(dirname "${BIN}")"
 
 if [[ ".$1" = '.-v' ]]
 then
-    docker run --rm -v "${PROJECT}:${PROJECT}" -w "${PROJECT}" simplealpine/yaml2json:latest src/main/resources/web/etc/swagger.yaml \
-        | tee src/main/resources/web/etc/swagger.json
+    docker run --rm -v "${PROJECT}:${PROJECT}" -w "${PROJECT}" simplealpine/yaml2json:latest core/src/main/resources/web/etc/swagger.yaml \
+        | tee core/src/main/resources/web/etc/swagger.json
 else
-    docker run --rm -v "${PROJECT}:${PROJECT}" -w "${PROJECT}" simplealpine/yaml2json:latest src/main/resources/web/etc/swagger.yaml \
+    docker run --rm -v "${PROJECT}:${PROJECT}" -w "${PROJECT}" simplealpine/yaml2json:latest core/src/main/resources/web/etc/swagger.yaml \
         | docker run --rm -i stedolan/jq . \
-        > src/main/resources/web/etc/swagger.json
+        > core/src/main/resources/web/etc/swagger.json
 fi
