@@ -202,6 +202,29 @@ paths:
       responses:
         200:
           description: Successful operation
+  /compound/{id}/targetJar:
+    post:
+      tags:
+      - Ledger
+      description: Set the target Jar for the Compound Transaction
+      operationId: setTargetJar
+      consumes:
+      - application/json
+      parameters:
+      - in: path
+        name: id
+        description: The Id of the Compound Transaction to update
+        required: true
+        type: string
+      - in: body
+        name: targetJar
+        description: The target Jar
+        required: true
+        schema:
+          $ref: "#/definitions/JarData"
+      responses:
+        200:
+          description: Successful operation
   /compound/upload:
     post:
       tags:

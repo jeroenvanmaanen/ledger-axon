@@ -10,6 +10,7 @@ import org.axonframework.queryhandling.QueryGateway;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.sollunae.ledger.axon.account.command.CreateAccountCommand;
+import org.sollunae.ledger.axon.compound.command.CompoundUpdateTargetJarCommand;
 import org.sollunae.ledger.axon.compound.command.CreateCompoundCommand;
 import org.sollunae.ledger.axon.compound.persistence.CompoundDocument;
 import org.sollunae.ledger.axon.compound.persistence.LedgerCompoundRepository;
@@ -194,6 +195,16 @@ public class LedgerService implements LedgerApiDelegate {
             addEntryToCompound(entry.getId(), compoundId);
         }
         return ResponseEntity.ok(null);
+    }
+
+    @Override
+    public ResponseEntity<Void> setTargetJar(String id, JarData targetJar) {
+        commandGateway.sendAndWait(CompoundUpdateTargetJarCommand.builder()
+            .id(id)
+            .targetJar(targetJar.getCode())
+            .build()
+        );
+        return null;
     }
 
     @Override

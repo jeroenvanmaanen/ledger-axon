@@ -5,6 +5,8 @@ set -e
 BIN="$(cd "$(dirname "$0")" ; pwd)"
 PROJECT="$(dirname "${BIN}")"
 
+source "${BIN}/verbose.sh"
+
 if [[ ".$1" = '.--tee' ]]
 then
     exec > >(tee "$2") 2>&1

@@ -63,8 +63,12 @@ public class Compound {
     @CommandHandler
     public void handle(CompoundUpdateTargetJarCommand command) {
         if (Objects.equals(targetJar, command.getTargetJar())) {
+            LOGGER.debug("Target jar unchanged: {}: {}", id, targetJar);
             return;
         }
+        String newTargetJar = command.getTargetJar();
+        LOGGER.debug("Target jar: {}: {} -> {}", id, targetJar, newTargetJar);
+        targetJar = newTargetJar;
         apply(CompoundTargetJarUpdatedEvent.builder()
             .compoundId(command.getId())
             .targetJar(command.getTargetJar())
@@ -72,6 +76,7 @@ public class Compound {
             .build());
     }
 
+    @EventSourcingHandler
     public void on(CompoundTargetJarUpdatedEvent event) {
         targetJar = event.getTargetJar();
     }
@@ -130,11 +135,16 @@ public class Compound {
             addAmount(counters, contraJar, -member.getAmountCents());
         }
         Map<String,Long> newBalance = toBalance(counters);
-        affected = computeAffected(newBalance);
-        if (!newBalance.equals(balance)) {
+        if (newBalance.equals(balance)) {
+            LOGGER.debug("Balance is unchanged");
+        } else {
+            balance = newBalance;
+            String newAffected = computeAffected(balance);
+            LOGGER.debug("Affected: {}: {} -> {}", id, affected, newAffected);
+            affected = newAffected;
             apply(CompoundBalanceUpdatedEvent.builder()
                 .compoundId(command.getId())
-                .balance(newBalance)
+                .balance(balance)
                 .affected(affected)
                 .balanceMatchesTarget(Objects.equals(affected, targetJar))
                 .build());

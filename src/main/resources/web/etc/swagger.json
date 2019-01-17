@@ -336,6 +336,41 @@
         ]
       }
     },
+    "/compound/{id}/targetJar": {
+      "post": {
+        "consumes": [
+          "application/json"
+        ],
+        "description": "Set the target Jar for the Compound Transaction",
+        "operationId": "setTargetJar",
+        "parameters": [
+          {
+            "description": "The Id of the Compound Transaction to update",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "description": "The target Jar",
+            "in": "body",
+            "name": "targetJar",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/JarData"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful operation"
+          }
+        },
+        "tags": [
+          "Ledger"
+        ]
+      }
+    },
     "/entry": {
       "post": {
         "description": "Create a new ledger Entry",
