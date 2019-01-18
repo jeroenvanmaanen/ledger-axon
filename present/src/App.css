@@ -1,0 +1,64 @@
+.App {
+  padding-left: 1em;
+}
+
+.App-title {
+  font-size: 1.5em;
+}
+
+.todo {
+  background: yellow;
+}
+.valid {
+  background: #33ff33;
+}
+.invalid {
+  background: #ff3333;
+}
+
+th,
+td {
+    text-align: left;
+    vertical-align: text-top;
+}
+
+.Compound {
+    position: fixed;
+    bottom: 10px;
+    right: 10px;
+    background: yellow;
+    width: 400px;
+    border: 2px solid black;
+    padding: 5px;
+}
+
+.compoundInput {
+    width: 393px;
+}
+
+.compoundMember {
+    background: yellow;
+}
+
+.key_signedCents {
+    text-align: right;
+}
+
+.hidden {
+    display: none;
+}
+
+.compoundJars,
+.compoundJars div {
+    display: inline-block;
+}
+.compoundJars > div > div {
+    padding: 3px;
+}
+.compoundJars > .unaffected > div.compoundJar {
+    display: none;
+    color: #c80;
+}
+.compoundJars:hover > .unaffected > div.compoundJar {
+    display: inline-block;
+}

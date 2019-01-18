@@ -1,0 +1,15 @@
+events {
+}
+
+http {
+    include             mime-types.nginx;
+    index               index.html;
+    default_type        text/html;
+    server {
+        listen          80;
+        root            /usr/share/nginx/html;
+        location        ~ ^/api/ {
+            proxy_pass  http://mongodb-ledger-rest:3000;
+        }
+    }
+}

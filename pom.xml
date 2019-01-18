@@ -18,10 +18,12 @@
         <swagger-codegen-cli.version>2.4.0</swagger-codegen-cli.version>
         <apache-commons-csv.version>1.6</apache-commons-csv.version>
         <jackson.version>2.9.7</jackson.version>
+        <exec-maven-plugin.version>1.6.0</exec-maven-plugin.version>
     </properties>
 
     <modules>
         <module>core</module>
+        <module>present</module>
     </modules>
 
 </project>
