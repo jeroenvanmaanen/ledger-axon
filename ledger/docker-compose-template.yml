@@ -47,7 +47,7 @@ services:
     networks:
     - ledger
     ports:
-    - target: 8080
+    - target: 80
       published: ${UI_SERVER_PORT}
     depends_on:
     - mongodb

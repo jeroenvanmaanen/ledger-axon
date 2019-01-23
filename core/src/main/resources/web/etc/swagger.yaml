@@ -1,6 +1,6 @@
 swagger: "2.0"
 info:
-  description: "This is Ledger server. [Swagger contract](resources/etc/swagger.json).  You can find out more about Ledger at [http://swagger.io](http://swagger.io) or on [irc.freenode.net, #swagger](http://swagger.io/irc/)."
+  description: "This is Ledger server. [Swagger contract](resources/etc/swagger.yaml)."
   version: 1.0.0
   title: Ledger
   termsOfService: http://swagger.io/terms/
