@@ -42,18 +42,24 @@ sleep 5 # Wait for Axon Server to start
 (
     cd "${PROJECT}"
     ./mvnw -Djansi.force=true clean package
-    java -jar core/target/ledger-axon-core-0.0.1-SNAPSHOT.jar --spring.output.ansi.enabled=ALWAYS &
+    docker stop ledger-axon-server
+    docker stop ledger-axon-mongodb
+
+    ledger/docker-compose-up.sh &
     PID_LEDGER="$!"
     trap "echo ; kill '${PID_LEDGER}' ; sleep 3" EXIT
 
     cd data
-    waitForServerReady 'http://localhost:8080/actuator/health'
+    AXON_SERVER_URL='http://localhost:8024'
+    waitForServerReady "${AXON_SERVER_URL}/actuator/health"
+    LEDGER_API_URL='http://localhost:8090'
+    waitForServerReady "${LEDGER_API_URL}/actuator/health"
     echo 'Importing accounts' >&2
-    curl -sS -X POST "http://localhost:8080/account/upload" -H "accept: application/json" -H "Content-Type: multipart/form-data" -F "file=@accounts-local.yaml"
+    curl -sS -X POST "${LEDGER_API_URL}/account/upload" -H "accept: application/json" -H "Content-Type: multipart/form-data" -F "file=@accounts-local.yaml"
     echo 'Importing entries' >&2
-    curl -sS -X POST "http://localhost:8080/entry/upload/TDF" -H "accept: application/json" -H "Content-Type: multipart/form-data" -F "file=@transactions-local.tsv"
+    curl -sS -X POST "${LEDGER_API_URL}/entry/upload/TDF" -H "accept: application/json" -H "Content-Type: multipart/form-data" -F "file=@transactions-local.tsv"
     echo 'Importing compound samples' >&2
-    curl -sS -X POST "http://localhost:8080/compound/upload" -H "accept: application/json" -H "Content-Type: multipart/form-data" -F "file=@compound-local.yaml"
+    curl -sS -X POST "${LEDGER_API_URL}/compound/upload" -H "accept: application/json" -H "Content-Type: multipart/form-data" -F "file=@compound-local.yaml"
     echo 'Imported all' >&2
 
     wait "${PID_LEDGER}"

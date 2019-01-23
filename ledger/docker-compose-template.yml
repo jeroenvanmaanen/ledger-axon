@@ -1,0 +1,58 @@
+version: '3.3'
+
+networks:
+  ledger:
+    driver: overlay
+
+services:
+  axon-server:
+    # docker run -d --name ledger-axon-server -p 8024:8024 -p 8124:8124 --hostname axonserver -e AXONSERVER_HOSTNAME=axonserver axoniq/axonserver
+    image: axoniq/axonserver:${AXON_VERSION}
+    networks:
+    - ledger
+    ports:
+    - target: 8024
+      published: ${AXON_SERVER_PORT}
+    expose:
+    - "8024"
+    - "8124"
+  mongodb:
+    image: mongo:${MONGO_VERSION}
+    networks:
+    - ledger
+    expose:
+    - "27017"
+    volumes:
+    -
+      type: volume
+      source: ledger-data
+      target: /data/db
+  ledger-core:
+    image: ${DOCKER_REPOSITORY}/ledger-core:${LEDGER_IMAGE_VERSION}
+    hostname: ledger-core
+    networks:
+    - ledger
+    ports:
+    - target: 8080
+      published: ${API_SERVER_PORT}
+    depends_on:
+    - mongodb
+    - axon-server
+    deploy:
+      mode: replicated
+      replicas: 2
+      restart_policy:
+        condition: on-failure
+  ledger-present:
+    image: ${DOCKER_REPOSITORY}/ledger-present:${LEDGER_IMAGE_VERSION}
+    networks:
+    - ledger
+    ports:
+    - target: 8080
+      published: ${UI_SERVER_PORT}
+    depends_on:
+    - mongodb
+    - axon-server
+
+volumes:
+  ledger-data:

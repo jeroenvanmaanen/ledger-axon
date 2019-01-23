@@ -2,13 +2,18 @@
 
 BIN="$(cd "$(dirname "$0")" ; pwd)"
 PROJECT="$(dirname "${BIN}")"
+GENERATED_API="${PROJECT}/core/target/generated-api"
 
-if [[ ".$1" = '.-v' ]]
+source "${BIN}/verbose.sh"
+
+mkdir -p "${GENERATED_API}"
+
+if [[ ".$1" = '.-x' ]]
 then
     docker run --rm -v "${PROJECT}:${PROJECT}" -w "${PROJECT}" simplealpine/yaml2json:latest core/src/main/resources/web/etc/swagger.yaml \
-        | tee core/src/main/resources/web/etc/swagger.json
+        | tee "${GENERATED_API}/swagger.json"
 else
     docker run --rm -v "${PROJECT}:${PROJECT}" -w "${PROJECT}" simplealpine/yaml2json:latest core/src/main/resources/web/etc/swagger.yaml \
         | docker run --rm -i stedolan/jq . \
-        > core/src/main/resources/web/etc/swagger.json
+        > "${GENERATED_API}/swagger.json"
 fi

@@ -1,3 +1,4 @@
+/ledger/docker-compose.yml
 /data/**/*-local.*
 /.idea/
 /**/target/

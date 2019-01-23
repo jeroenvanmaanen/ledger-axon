@@ -23,6 +23,7 @@
         <swagger-codegen-cli.version>2.4.0</swagger-codegen-cli.version>
         <apache-commons-csv.version>1.6</apache-commons-csv.version>
         <jackson.version>2.9.7</jackson.version>
+        <dockerfile-maven.version>1.4.10</dockerfile-maven.version>
     </properties>
 
     <dependencies>
@@ -105,36 +106,47 @@
                 <version>${exec-maven-plugin.version}</version>
                 <executions>
                     <execution>
+                        <id>swagger-generate-api</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                        <configuration>
+                            <executable>${project.basedir}/../bin/swagger-yaml-to-json.sh</executable>
+                        </configuration>
+                    </execution>
+                    <execution>
                         <id>swagger-codegen-test</id>
                         <phase>generate-sources</phase>
                         <goals>
                             <goal>java</goal>
                         </goals>
+                        <configuration>
+                            <mainClass>io.swagger.codegen.SwaggerCodegen</mainClass>
+                            <arguments>
+                                <argument>generate</argument>
+                                <argument>-i</argument>
+                                <argument>${project.basedir}/target/generated-api/swagger.json</argument>
+                                <argument>-l</argument>
+                                <argument>spring</argument>
+                                <argument>--library</argument>
+                                <argument>spring-mvc</argument>
+                                <argument>--api-package</argument>
+                                <argument>org.sollunae.ledger.rest</argument>
+                                <argument>--model-package</argument>
+                                <argument>org.sollunae.ledger.model</argument>
+                                <argument>-DconfigPackage=org.sollunae.ledger.rest.config</argument>
+                                <argument>-DuseTags=true</argument>
+                                <!-- argument>-Dasync=true</argument -->
+                                <argument>-DdelegatePattern=true</argument>
+                                <argument>-DdateLibrary=java8</argument>
+                                <argument>-o</argument>
+                                <argument>${project.basedir}/target/generated-sources/swagger</argument>
+                            </arguments>
+                        </configuration>
                     </execution>
                 </executions>
                 <configuration>
-                    <executable>java</executable>
-                    <mainClass>io.swagger.codegen.SwaggerCodegen</mainClass>
-                    <arguments>
-                        <argument>generate</argument>
-                        <argument>-i</argument>
-                        <argument>${project.basedir}/src/main/resources/web/etc/swagger.json</argument>
-                        <argument>-l</argument>
-                        <argument>spring</argument>
-                        <argument>--library</argument>
-                        <argument>spring-mvc</argument>
-                        <argument>--api-package</argument>
-                        <argument>org.sollunae.ledger.rest</argument>
-                        <argument>--model-package</argument>
-                        <argument>org.sollunae.ledger.model</argument>
-                        <argument>-DconfigPackage=org.sollunae.ledger.rest.config</argument>
-                        <argument>-DuseTags=true</argument>
-                        <!-- argument>-Dasync=true</argument -->
-                        <argument>-DdelegatePattern=true</argument>
-                        <argument>-DdateLibrary=java8</argument>
-                        <argument>-o</argument>
-                        <argument>${project.basedir}/target/generated-sources/swagger</argument>
-                    </arguments>
                     <includeProjectDependencies>true</includeProjectDependencies>
                     <includePluginDependencies>true</includePluginDependencies>
                 </configuration>
@@ -163,6 +175,27 @@
                         </configuration>
                     </execution>
                 </executions>
+            </plugin>
+            <plugin>
+                <groupId>com.spotify</groupId>
+                <artifactId>dockerfile-maven-plugin</artifactId>
+                <version>${dockerfile-maven.version}</version>
+                <executions>
+                    <execution>
+                        <id>default</id>
+                        <goals>
+                            <goal>build</goal>
+                            <goal>push</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <repository>jeroenvm/ledger-core</repository>
+                    <tag>${project.version}</tag>
+                    <buildArgs>
+                        <JAR_FILE>${project.build.finalName}.jar</JAR_FILE>
+                    </buildArgs>
+                </configuration>
             </plugin>
         </plugins>
     </build>
