@@ -54,6 +54,8 @@ sleep 5 # Wait for Axon Server to start
     waitForServerReady "${AXON_SERVER_URL}/actuator/health"
     LEDGER_API_URL='http://localhost:8090'
     waitForServerReady "${LEDGER_API_URL}/actuator/health"
+    sleep 5
+
     echo 'Importing accounts' >&2
     curl -sS -X POST "${LEDGER_API_URL}/account/upload" -H "accept: application/json" -H "Content-Type: multipart/form-data" -F "file=@accounts-local.yaml"
     echo 'Importing entries' >&2
