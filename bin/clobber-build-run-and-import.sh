@@ -10,6 +10,7 @@ source "${BIN}/verbose.sh"
 if [[ ".$1" = '.--tee' ]]
 then
     exec > >(tee "$2") 2>&1
+    shift 2
 fi
 
 "${BIN}/swagger-yaml-to-json.sh"
@@ -45,6 +46,12 @@ sleep 5 # Wait for Axon Server to start
     docker stop ledger-axon-server
     docker stop ledger-axon-mongodb
 
+    (
+        cd ledger
+        docker-compose rm --stop --force
+        docker volume rm -f ledger_mongo
+        docker volume rm -f ledger_axon
+    )
     ledger/docker-compose-up.sh &
     PID_LEDGER="$!"
     trap "echo ; kill '${PID_LEDGER}' ; sleep 3" EXIT
