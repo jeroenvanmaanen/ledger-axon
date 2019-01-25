@@ -33,6 +33,24 @@ function waitForServerReady() {
     done
 }
 
+function countRunningContainers() {
+    local HASH
+    for HASH in $(docker-compose ps -q 2>/dev/null)
+    do
+        docker inspect -f '{{.State.Status}}' "${HASH}"
+    done | grep -c running
+}
+
+function waitForDockerComposeReady() {
+    (
+        cd "${PROJECT}/ledger"
+        while [[ "$(countRunningContainers)" -gt 0 ]]
+        do
+            sleep 0.5
+        done
+    )
+}
+
 docker rm -f ledger-axon-server
 docker rm -f ledger-axon-mongodb
 
@@ -49,12 +67,12 @@ sleep 5 # Wait for Axon Server to start
     (
         cd ledger
         docker-compose rm --stop --force
-        docker volume rm -f ledger_mongo
-        docker volume rm -f ledger_axon
+        docker volume rm -f ledger_mongo-data
+        docker volume rm -f ledger_axon-data
     )
     ledger/docker-compose-up.sh &
     PID_LEDGER="$!"
-    trap "echo ; kill '${PID_LEDGER}' ; sleep 3" EXIT
+    trap "echo ; kill '${PID_LEDGER}' ; waitForDockerComposeReady" EXIT
 
     cd data
     AXON_SERVER_URL='http://localhost:8024'
