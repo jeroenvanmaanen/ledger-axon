@@ -10,11 +10,12 @@ esac
 export SED_EXT
 
 COMPOSE="$(cd "$(dirname "$0")" ; pwd)"
-DOCKER="$(dirname "${COMPOSE}")"
+PROJECT="$(dirname "${COMPOSE}")"
+PRESENT="${PROJECT}/present"
 DOCKER_REPOSITORY='ledger'
 
 : ${SILENT:=true}
-. "${DOCKER}/bin/verbose.sh"
+. "${PROJECT}/bin/verbose.sh"
 
 : ${EXTRA_VOLUMES:=}
 source "${COMPOSE}/etc/settings-local.sh"
@@ -24,6 +25,21 @@ if [[ -n "${EXTRA_VOLUMES}" ]]
 then
     VOLUMES="
     volumes:${EXTRA_VOLUMES}"
+fi
+
+PRESENT_SUFFIX=''
+PRESENT_VOLUMES=''
+if [[ ".$1" = '.--dev' ]]
+then
+    shift
+    PRESENT_SUFFIX='-dev'
+    PRESENT_VOLUMES="
+    volumes:
+    -
+      type: bind
+      source: ${PRESENT}
+      target: ${PRESENT}
+    working_dir: ${PRESENT}"
 fi
 
 BASE="${COMPOSE}/docker-compose"

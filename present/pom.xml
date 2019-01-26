@@ -96,15 +96,31 @@
                             <goal>build</goal>
                             <goal>push</goal>
                         </goals>
+                        <configuration>
+                            <repository>jeroenvm/ledger-present</repository>
+                            <tag>${project.version}</tag>
+                            <buildArgs>
+                                <JAR_FILE>${project.build.finalName}.jar</JAR_FILE>
+                            </buildArgs>
+                            <dockerfile>Dockerfile</dockerfile>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>development</id>
+                        <goals>
+                            <goal>build</goal>
+                            <goal>push</goal>
+                        </goals>
+                        <configuration>
+                            <repository>jeroenvm/ledger-present</repository>
+                            <tag>${project.version}-dev</tag>
+                            <buildArgs>
+                                <JAR_FILE>${project.build.finalName}.jar</JAR_FILE>
+                            </buildArgs>
+                            <dockerfile>Dockerfile-development</dockerfile>
+                        </configuration>
                     </execution>
                 </executions>
-                <configuration>
-                    <repository>jeroenvm/ledger-present</repository>
-                    <tag>${project.version}</tag>
-                    <buildArgs>
-                        <JAR_FILE>${project.build.finalName}.jar</JAR_FILE>
-                    </buildArgs>
-                </configuration>
             </plugin>
         </plugins>
     </build>

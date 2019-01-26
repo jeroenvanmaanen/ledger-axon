@@ -48,15 +48,16 @@ services:
       restart_policy:
         condition: on-failure
   ledger-present:
-    image: ${DOCKER_REPOSITORY}/ledger-present:${LEDGER_IMAGE_VERSION}
+    image: ${DOCKER_REPOSITORY}/ledger-present:${LEDGER_IMAGE_VERSION}${PRESENT_SUFFIX}
     networks:
     - ledger
     ports:
-    - target: 80
+    - target: 3000
       published: ${UI_SERVER_PORT}
     depends_on:
     - mongodb
     - axon-server
+${PRESENT_VOLUMES}
 
 volumes:
   mongo-data:

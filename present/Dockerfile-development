@@ -1,0 +1,4 @@
+FROM node:latest
+MAINTAINER Jeroen van Maanen <jeroen@leialearns.org>
+
+ENTRYPOINT ["npm","start"]
