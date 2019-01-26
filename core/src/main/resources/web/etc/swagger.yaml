@@ -17,7 +17,7 @@ consumes: []
 produces:
 - application/json
 paths:
-  /prod/{name}:
+  /api/prod/{name}:
     post:
       tags:
       - Greeter
@@ -40,7 +40,7 @@ paths:
       - ledger_auth:
         - write:ledger
         - read:ledger
-  /account/{id}:
+  /api/account/{id}:
     put:
       tags:
       - Ledger
@@ -62,7 +62,7 @@ paths:
           description: Account created
           schema:
             type: string
-  /account/upload:
+  /api/account/upload:
     post:
       tags:
       - Ledger
@@ -78,7 +78,7 @@ paths:
       responses:
         200:
           description: Successful operation
-  /entry:
+  /api/entry:
     post:
       tags:
       - Ledger
@@ -95,7 +95,7 @@ paths:
           description: Entry created
           schema:
             type: string
-  /entry/{id}/compound/{compoundId}:
+  /api/entry/{id}/compound/{compoundId}:
     post:
       tags:
       - Ledger
@@ -115,7 +115,7 @@ paths:
       responses:
         200:
           description: Successful operation
-  /entry/{id}/compound:
+  /api/entry/{id}/compound:
     delete:
       tags:
       - Ledger
@@ -130,7 +130,7 @@ paths:
       responses:
         200:
           description: Successful operation
-  /entry/{id}/jar:
+  /api/entry/{id}/jar:
     post:
       tags:
       - Ledger
@@ -152,7 +152,7 @@ paths:
       responses:
         200:
           description: Successful operation
-  /compound:
+  /api/compound:
     post:
       tags:
       - Ledger
@@ -163,7 +163,7 @@ paths:
           description: Compound Transaction created
           schema:
             type: string
-  /compound/{compoundId}:
+  /api/compound/{compoundId}:
     get:
       tags:
       - Ledger
@@ -180,7 +180,7 @@ paths:
           description: Successful operation
           schema:
             $ref: "#/definitions/CompoundData"
-  /compound/{id}/member:
+  /api/compound/{id}/member:
     post:
       tags:
       - Ledger
@@ -202,7 +202,7 @@ paths:
       responses:
         200:
           description: Successful operation
-  /compound/{id}/targetJar:
+  /api/compound/{id}/targetJar:
     post:
       tags:
       - Ledger
@@ -225,7 +225,7 @@ paths:
       responses:
         200:
           description: Successful operation
-  /compound/upload:
+  /api/compound/upload:
     post:
       tags:
       - Ledger
@@ -241,7 +241,7 @@ paths:
       responses:
         200:
           description: Successful operation
-  /entry/upload/{format}:
+  /api/entry/upload/{format}:
     post:
       tags:
       - Ledger

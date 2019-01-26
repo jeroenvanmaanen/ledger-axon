@@ -82,11 +82,11 @@ sleep 5 # Wait for Axon Server to start
     sleep 5
 
     echo 'Importing accounts' >&2
-    curl -sS -X POST "${LEDGER_API_URL}/account/upload" -H "accept: application/json" -H "Content-Type: multipart/form-data" -F "file=@accounts-local.yaml"
+    curl -sS -X POST "${LEDGER_API_URL}/api/account/upload" -H "accept: application/json" -H "Content-Type: multipart/form-data" -F "file=@accounts-local.yaml"
     echo 'Importing entries' >&2
-    curl -sS -X POST "${LEDGER_API_URL}/entry/upload/TDF" -H "accept: application/json" -H "Content-Type: multipart/form-data" -F "file=@transactions-local.tsv"
+    curl -sS -X POST "${LEDGER_API_URL}/api/entry/upload/TDF" -H "accept: application/json" -H "Content-Type: multipart/form-data" -F "file=@transactions-local.tsv"
     echo 'Importing compound samples' >&2
-    curl -sS -X POST "${LEDGER_API_URL}/compound/upload" -H "accept: application/json" -H "Content-Type: multipart/form-data" -F "file=@compound-local.yaml"
+    curl -sS -X POST "${LEDGER_API_URL}/api/compound/upload" -H "accept: application/json" -H "Content-Type: multipart/form-data" -F "file=@compound-local.yaml"
     echo 'Imported all' >&2
 
     wait "${PID_LEDGER}"
