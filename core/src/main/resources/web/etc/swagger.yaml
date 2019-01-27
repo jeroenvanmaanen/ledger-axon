@@ -40,7 +40,7 @@ paths:
       - ledger_auth:
         - write:ledger
         - read:ledger
-  /api/account:
+  /api/accounts:
     get:
       tags:
       - Ledger
@@ -89,6 +89,22 @@ paths:
       responses:
         200:
           description: Successful operation
+  /api/entries/date-prefix:
+    post:
+      tags:
+      - Ledger
+      description: Get entries with a given date prefix
+      operationId: getEntriesWithPrefix
+      parameters:
+      - in: formData
+        name: datePrefix
+        description: The date prefix
+        type: string
+      responses:
+        200:
+          description: Successful operation
+          schema:
+            $ref: "#/definitions/ArrayOfEntryData"
   /api/entry:
     post:
       tags:

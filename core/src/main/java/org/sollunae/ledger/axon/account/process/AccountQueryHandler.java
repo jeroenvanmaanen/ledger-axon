@@ -6,7 +6,6 @@ import org.sollunae.ledger.axon.account.persistence.LedgerAccountRepository;
 import org.sollunae.ledger.axon.account.query.AccountAllQuery;
 import org.sollunae.ledger.model.ArrayOfAccountData;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -23,7 +22,7 @@ public class AccountQueryHandler {
     }
 
     @QueryHandler
-    public ArrayOfAccountData query(AccountAllQuery query, MongoTemplate mongoTemplate) {
+    public ArrayOfAccountData query(AccountAllQuery query) {
         List<AccountDocument> accounts = ledgerAccountRepository.findAll();
         ArrayOfAccountData accountsArray = new ArrayOfAccountData();
         accountsArray.addAll(accounts.stream().map(AccountDocument::getData).collect(Collectors.toList()));

@@ -167,7 +167,7 @@ class Compound extends Component {
 
   async refreshAccounts() {
     const self = this;
-    const accountsPromise = await REST('/api/accounts')
+    const accountsPromise = await REST('/api/account')
     console.log('accountsPromise', accountsPromise);
     var accountsMap = {};
     var record;

@@ -16,6 +16,7 @@ import org.sollunae.ledger.axon.compound.command.CreateCompoundCommand;
 import org.sollunae.ledger.axon.compound.persistence.CompoundDocument;
 import org.sollunae.ledger.axon.compound.persistence.LedgerCompoundRepository;
 import org.sollunae.ledger.axon.compound.query.CompoundByIdQuery;
+import org.sollunae.ledger.axon.entry.query.EntriesWithDatePrefixQuery;
 import org.sollunae.ledger.axon.entry.command.CreateEntryCommand;
 import org.sollunae.ledger.axon.entry.command.EntryAddToCompoundCommand;
 import org.sollunae.ledger.axon.entry.command.EntryRemoveFromCompoundCommand;
@@ -87,6 +88,20 @@ public class LedgerService implements LedgerApiDelegate {
             return ResponseEntity.ok(accounts);
         } catch (InterruptedException | ExecutionException e) {
             LOGGER.error("Error getting Accounts", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+        }
+    }
+
+    @Override
+    public ResponseEntity<ArrayOfEntryData> getEntriesWithPrefix(String datePrefix) {
+        try {
+            EntriesWithDatePrefixQuery query = EntriesWithDatePrefixQuery.builder()
+                .datePrefix(datePrefix)
+                .build();
+            ArrayOfEntryData accounts = queryGateway.query(query, ArrayOfEntryData.class).get();
+            return ResponseEntity.ok(accounts);
+        } catch (InterruptedException | ExecutionException e) {
+            LOGGER.error("Error getting entries with date prefix: {}", datePrefix, e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
         }
     }
