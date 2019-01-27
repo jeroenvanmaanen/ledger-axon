@@ -17,6 +17,7 @@ DOCKER_REPOSITORY='ledger'
 : ${SILENT:=true}
 . "${PROJECT}/bin/verbose.sh"
 
+: ${MONGO_SERVER_PORT:=27017}
 : ${EXTRA_VOLUMES:=}
 source "${COMPOSE}/etc/settings-local.sh"
 
@@ -27,13 +28,19 @@ then
     volumes:${EXTRA_VOLUMES}"
 fi
 
+MONGO_PORTS=' Do not expose Mongo DB port'
 PRESENT_SUFFIX=''
-PRESENT_VOLUMES=''
+PRESENT_VOLUMES=' No volumes'
 if [[ ".$1" = '.--dev' ]]
 then
     shift
+    MONGO_PORTS="
+    ports:
+    -
+      target: 27017
+      published: ${MONGO_SERVER_PORT}"
     PRESENT_SUFFIX='-dev'
-    PRESENT_VOLUMES="
+    PRESENT_VOLUMES=" Mount local volume for development
     volumes:
     -
       type: bind

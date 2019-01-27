@@ -5,7 +5,15 @@ set -e
 BIN="$(cd "$(dirname "$0")" ; pwd)"
 PROJECT="$(dirname "${BIN}")"
 
+declare -a FLAGS_INHERIT
 source "${BIN}/verbose.sh"
+
+if [[ ".$1" = '.--help' ]]
+then
+    echo "Usage: $(basename "$0") [ -v [ -v ] ] [ --tee <file> ] [ --dev ]" >&2
+    echo "       $(basename "$0") --help" >&2
+    exit 0
+fi
 
 if [[ ".$1" = '.--tee' ]]
 then
@@ -54,6 +62,12 @@ function waitForDockerComposeReady() {
 docker rm -f ledger-axon-server
 docker rm -f ledger-axon-mongodb
 
+: ${AXON_SERVER_PORT=8024}
+: ${API_SERVER_PORT=8080}
+"${BIN}/create-local-settings.sh"
+
+source "${PROJECT}/ledger/etc/settings-local.sh"
+
 "${BIN}/docker-run-axon-server.sh"
 "${BIN}/docker-run-mongodb.sh"
 sleep 5 # Wait for Axon Server to start
@@ -70,14 +84,14 @@ sleep 5 # Wait for Axon Server to start
         docker volume rm -f ledger_mongo-data
         docker volume rm -f ledger_axon-data
     )
-    ledger/docker-compose-up.sh &
+    ledger/docker-compose-up.sh "${FLAGS_INHERIT[@]}" "$@" &
     PID_LEDGER="$!"
     trap "echo ; kill '${PID_LEDGER}' ; waitForDockerComposeReady" EXIT
 
     cd data
-    AXON_SERVER_URL='http://localhost:8024'
+    AXON_SERVER_URL="http://localhost:${AXON_SERVER_PORT}"
     waitForServerReady "${AXON_SERVER_URL}/actuator/health"
-    LEDGER_API_URL='http://localhost:8090'
+    LEDGER_API_URL="http://localhost:${API_SERVER_PORT}"
     waitForServerReady "${LEDGER_API_URL}/actuator/health"
     sleep 5
 

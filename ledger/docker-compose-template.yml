@@ -24,6 +24,7 @@ services:
     image: mongo:${MONGO_VERSION}
     networks:
     - ledger
+#${MONGO_PORTS}
     expose:
     - "27017"
     volumes:
