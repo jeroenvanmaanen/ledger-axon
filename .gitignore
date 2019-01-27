@@ -1,5 +1,6 @@
 /ledger/docker-compose.yml
 /data/**/*-local.*
+/ledger/**/*-local.*
 /.idea/
 /**/target/
 /tmp/
