@@ -40,6 +40,17 @@ paths:
       - ledger_auth:
         - write:ledger
         - read:ledger
+  /api/account:
+    get:
+      tags:
+      - Ledger
+      description: Get all accounts
+      operationId: getAllAccounts
+      responses:
+        200:
+          description: Successful operation
+          schema:
+            $ref: "#/definitions/ArrayOfAccountData"
   /api/account/{id}:
     put:
       tags:
@@ -291,6 +302,10 @@ definitions:
         type: string
       depth:
         type: integer
+  ArrayOfAccountData:
+    type: array
+    items:
+      $ref: "#/definitions/AccountData"
   JarData:
     type: object
     properties:
@@ -335,6 +350,10 @@ definitions:
         type: boolean
       key:
         type: string
+  ArrayOfEntryData:
+    type: array
+    items:
+      $ref: "#/definitions/EntryData"
   LabelData:
     type: object
     properties:
@@ -379,6 +398,10 @@ definitions:
     properties:
       compoundId:
         type: string
+  ArrayOfCompoundData:
+    type: array
+    items:
+      $ref: "#/definitions/CompoundData"
 securityDefinitions:
   ledger_auth:
     type: oauth2

@@ -10,6 +10,7 @@ import org.axonframework.queryhandling.QueryGateway;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.sollunae.ledger.axon.account.command.CreateAccountCommand;
+import org.sollunae.ledger.axon.account.query.AccountAllQuery;
 import org.sollunae.ledger.axon.compound.command.CompoundUpdateTargetJarCommand;
 import org.sollunae.ledger.axon.compound.command.CreateCompoundCommand;
 import org.sollunae.ledger.axon.compound.persistence.CompoundDocument;
@@ -77,6 +78,17 @@ public class LedgerService implements LedgerApiDelegate {
     @Override
     public ResponseEntity<Void> assignEntryToJar(String id, JarData jar) {
         return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).body(null);
+    }
+
+    @Override
+    public ResponseEntity<ArrayOfAccountData> getAllAccounts() {
+        try {
+            ArrayOfAccountData accounts = queryGateway.query(new AccountAllQuery(), ArrayOfAccountData.class).get();
+            return ResponseEntity.ok(accounts);
+        } catch (InterruptedException | ExecutionException e) {
+            LOGGER.error("Error getting Accounts", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+        }
     }
 
     @Override

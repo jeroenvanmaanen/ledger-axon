@@ -1,0 +1,18 @@
+events {
+}
+
+http {
+    include             mime-types.nginx;
+    index               index.html;
+    default_type        text/html;
+    server {
+        listen          80;
+        root            /usr/share/nginx/html;
+        location        ~ ^/api/ {
+            proxy_pass  http://ledger-core:8080;
+        }
+        location        ~ ^/ {
+            proxy_pass  http://ledger-present:3000;
+        }
+    }
+}

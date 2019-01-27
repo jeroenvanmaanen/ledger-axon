@@ -51,13 +51,22 @@ services:
     image: ${DOCKER_REPOSITORY}/ledger-present:${LEDGER_IMAGE_VERSION}${PRESENT_SUFFIX}
     networks:
     - ledger
-    ports:
-    - target: 3000
-      published: ${UI_SERVER_PORT}
+    expose:
+    - "3000"
     depends_on:
     - mongodb
     - axon-server
-${PRESENT_VOLUMES}
+#${PRESENT_VOLUMES}
+  ledger-proxy:
+    image: ${DOCKER_REPOSITORY}/ledger-proxy:${LEDGER_IMAGE_VERSION}
+    networks:
+    - ledger
+    ports:
+    - target: 80
+      published: ${UI_SERVER_PORT}
+    depends_on:
+    - ledger-core
+    - ledger-present
 
 volumes:
   mongo-data:
