@@ -31,7 +31,7 @@ class Export extends Component {
   formatTransaction(record) {
     // console.log('Record:', record);
     const self = this;
-    const keys = [ 'date', 'name', 'intendedJar', 'account', 'contraAccount', 'code', 'signedCents', 'kind', 'remarks' ]
+    const keys = [ 'date', 'name', 'intendedJar', 'account', 'contraAccount', 'code', 'amountCents', 'kind', 'remarks' ]
     const cells = keys
       .map(
         (key) => {
@@ -51,7 +51,7 @@ class Export extends Component {
             }
           } else if (!record.hasOwnProperty(key)) {
             value = '???';
-          } else if (key === 'signedCents') {
+          } else if (key === 'amountCents') {
             value = self.formatValue(record[key])
           } else if (key === 'account' || key === 'contraAccount') {
             value = self.formatAccount(record[key])

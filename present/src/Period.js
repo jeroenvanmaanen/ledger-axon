@@ -43,7 +43,7 @@ class Period extends Component {
               <th>Rekening</th>
               <th>Tegenrekening</th>
               <th>Code</th>
-              <th class="key_signedCents">Bedrag (EUR)</th>
+              <th className="key_amountCents">Bedrag (EUR)</th>
               <th>Mutatie-soort</th>
               <th>Mededelingen</th>
             </tr>
@@ -59,7 +59,7 @@ class Period extends Component {
   formatTransaction(record) {
     // console.log('Record:', record);
     const self = this;
-    const keys = [ 'add', 'date', 'name', 'intendedJar', 'account', 'contraAccount', 'code', 'signedCents', 'kind', 'remarks' ]
+    const keys = [ 'add', 'date', 'description', 'intendedJar', 'account', 'contraAccount', 'code', 'amountCents', 'kind', 'remarks' ]
     const cells = keys
       .map(
         (key) => {
@@ -83,7 +83,7 @@ class Period extends Component {
             }
           } else if (!record.hasOwnProperty(key)) {
             value = '???';
-          } else if (key === 'signedCents') {
+          } else if (key === 'amountCents') {
             unformatted = record[key]
             value = self.formatValue(unformatted)
           } else if (key === 'account' || key === 'contraAccount') {
@@ -94,11 +94,11 @@ class Period extends Component {
             value = '' + record[key];
           }
           if (unformatted === undefined) {
-            return <td class={cssClass} onClick={self.state.compoundApi.changeFocus}>{value}</td>;
+            return <td key={key} className={cssClass} onClick={self.state.compoundApi.changeFocus}>{value}</td>;
           } else if (jar === undefined) {
-            return <td class={cssClass} onClick={self.state.compoundApi.changeFocus} unformatted={'' + unformatted}>{value}</td>;
+            return <td key={key} className={cssClass} onClick={self.state.compoundApi.changeFocus} unformatted={'' + unformatted}>{value}</td>;
           } else {
-            return <td class={cssClass} onClick={self.state.compoundApi.changeFocus} unformatted={'' + unformatted} jar={jar}>{value}</td>;
+            return <td key={key} className={cssClass} onClick={self.state.compoundApi.changeFocus} unformatted={'' + unformatted} jar={jar}>{value}</td>;
           }
         }
       )
@@ -106,13 +106,13 @@ class Period extends Component {
     var cssClass = 'transaction';
     const d1 = self.getDepth(record.account);
     const d2 = self.getDepth(record.contraAccount);
-    if (d1 * d2 > 0 && record.signedCents >= 0) {
+    if (d1 * d2 > 0 && record.amountCents >= 0) {
       cssClass = cssClass + ' hidden';
     }
     if (this.state.compoundApi.isMember(record.key)) {
       cssClass = cssClass + ' compoundMember';
     }
-    return <tr class={cssClass} data-id={record.id} data-key={record.key}>{cells}</tr>;
+    return <tr key={record.id} className={cssClass} data-id={record.id} data-key={record.key}>{cells}</tr>;
   }
 
   getDepth(account) {

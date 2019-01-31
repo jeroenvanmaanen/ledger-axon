@@ -48,11 +48,11 @@ class Compound extends Component {
     return (
         <div className="CompoundContainer">
             <div className="Compound">
-              <div class="content">
+              <div className="content">
                 <h2>Compound [{this.state.jars}]</h2>
-                <p><span>Intended jar:</span>
-                  <div class='compoundJars'>
-                    <div class='affected'>
+                <div><span>Intended jar:</span>
+                  <div className='compoundJars'>
+                    <div className='affected'>
                       {Object.keys(this.state.staticAccounts)
                         .map((accountNr) => {
                           const account = this.state.staticAccounts[accountNr];
@@ -66,15 +66,15 @@ class Compound extends Component {
                                 cssClass = cssClass + ' valid';
                               }
                             }
-                            return (<div class={cssClass} onClick={handler}>{account.key}</div>)
+                            return (<div className={cssClass} onClick={handler}>{account.key}</div>)
                           } else {
                             return null;
                           }
                         })
                       }
                     </div>
-                    <div class='unaffected'>
-                      <div class='expandHandle'>&gt;</div>
+                    <div className='unaffected'>
+                      <div className='expandHandle'>&gt;</div>
                       {Object.keys(this.state.staticAccounts)
                         .map((accountNr) => {
                           const account = this.state.staticAccounts[accountNr];
@@ -84,16 +84,16 @@ class Compound extends Component {
                             if (account.key === this.state.intendedJar) {
                               cssClass = cssClass + ' intended';
                             }
-                            return (<div class={cssClass} onClick={handler}>{account.key}</div>)
+                            return (<div key={account.key} className={cssClass} onClick={handler}>{account.key}</div>)
                           } else {
                             return null;
                           }
                         })
                       }
-                      <div class='compoundJar' onClick={this.handleJarChangeFunction(this.state.intendedJar === '*' ? '?' : '*')}>*</div>
+                      <div className='compoundJar' onClick={this.handleJarChangeFunction(this.state.intendedJar === '*' ? '?' : '*')}>*</div>
                     </div>
                   </div>
-                </p>
+                </div>
                 <p>Label:</p>
                 <p><input type="text" name="label" className="compoundInput" value={this.state.label} onChange={this.handleLabelChange} /></p>
                 <p>Balance:</p>
@@ -103,7 +103,7 @@ class Compound extends Component {
                     })}
                 </ul>
                 <div>
-                  <div class="content">
+                  <div className="content">
                     <p>Transactions:</p>
                     <ul>
                         {this.state.transactions.map((transaction) => {
@@ -111,15 +111,15 @@ class Compound extends Component {
                         })}
                     </ul>
                   </div>
-                  <div class="toggle" onClick={this.handleContentToggle}>^</div>
+                  <div className="toggle" onClick={this.handleContentToggle}>^</div>
                 </div>
               </div>
-              <div class="toggle" onClick={this.handleContentToggle}>^</div>
+              <div className="toggle" onClick={this.handleContentToggle}>^</div>
             </div>
             <div>
               <form>
                 <p><input type="text" onChange={this.handlePrefixChange}/></p>
-                <p><input type="button" value="sanitize" onClick={this.sanitize}/> &#xA0; Show export <input type="checkbox" checked={this.state.staticExport} onClick={this.handleExportChange}/></p>
+                <p><input type="button" value="sanitize" onClick={this.sanitize}/> &#xA0; Show export <input type="checkbox" defaultChecked={this.state.staticExport} onClick={this.handleExportChange}/></p>
               </form>
               {this.state.staticExport
                 ? (<Export label={periodLabel} compoundApi={compoundApi} transactions={this.state.staticTransactions} />)
@@ -167,7 +167,7 @@ class Compound extends Component {
 
   async refreshAccounts() {
     const self = this;
-    const accountsPromise = await REST('/api/account')
+    const accountsPromise = await REST('/api/accounts')
     console.log('accountsPromise', accountsPromise);
     var accountsMap = {};
     var record;
@@ -187,7 +187,7 @@ class Compound extends Component {
   async refreshTransactions(prefix) {
     const self = this;
     if (prefix.length >= 4) {
-      const dataPromise = await REST('/api/transactions?date=/^' + prefix + '/&sort=date,number');
+      const dataPromise = await REST({method:'POST', path:'/api/entries/date-prefix?datePrefix=' + prefix});
       console.log('dataPromise', dataPromise);
       dataPromise.entity.forEach(record => {
         record.jar = self.getJarFromRecord(record);
@@ -276,7 +276,7 @@ class Compound extends Component {
     const transactionId = target.getAttribute('data-id');
     const transactionKey = target.getAttribute('data-key');
     const date = this.getField(target, 'date');
-    const amount = this.getField(target, 'signedCents');
+    const amount = this.getField(target, 'amountCents');
     const jar = this.getJar(target, 'account');
     const contraJar = this.getJar(target, 'contraAccount');
     const transaction = {
