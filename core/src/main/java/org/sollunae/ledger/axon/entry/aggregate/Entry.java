@@ -11,14 +11,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.sollunae.ledger.axon.compound.command.CompoundAddEntryCommand;
 import org.sollunae.ledger.axon.compound.command.CompoundRemoveEntryCommand;
-import org.sollunae.ledger.axon.entry.command.CreateEntryCommand;
-import org.sollunae.ledger.axon.entry.command.EntryAddToCompoundCommand;
-import org.sollunae.ledger.axon.entry.command.EntryRemoveFromCompoundCommand;
-import org.sollunae.ledger.axon.entry.command.EntryUpdateDataCommand;
-import org.sollunae.ledger.axon.entry.event.EntryCompoundAddedEvent;
-import org.sollunae.ledger.axon.entry.event.EntryCompoundRemovedEvent;
-import org.sollunae.ledger.axon.entry.event.EntryCreatedEvent;
-import org.sollunae.ledger.axon.entry.event.EntryDataUpdatedEvent;
+import org.sollunae.ledger.axon.entry.command.*;
+import org.sollunae.ledger.axon.entry.event.*;
 import org.sollunae.ledger.axon.unique.process.UniqueKeyService;
 import org.sollunae.ledger.model.CompoundMemberData;
 import org.sollunae.ledger.model.EntryData;
@@ -44,6 +38,8 @@ public class Entry {
 
     private EntryData data;
     private String compoundId;
+    private String intendedJar;
+    private Boolean balanceMatchesIntention;
 
     @CommandHandler
     public Entry(CreateEntryCommand createCommand, UniqueKeyService uniqueKeyService) {
@@ -164,5 +160,46 @@ public class Entry {
             .map(part -> part.replace("%", "%25"))
             .map(part -> part.replace("|", "%7C"))
             .collect(Collectors.joining("|"));
+    }
+
+    @CommandHandler
+    public void handle(EntryUpdateJarCommand command) {
+        String intendedJar = command.getIntendedJar();
+        Boolean balanceMatchesIntention = command.getBalanceMatchesIntention();
+        if (Objects.equals(intendedJar, this.intendedJar) &&
+            Objects.equals(balanceMatchesIntention, this.balanceMatchesIntention)
+        ) {
+            return;
+        }
+        apply(EntryJarUpdatedEvent.builder()
+            .entryId(command.getId())
+            .intendedJar(command.getIntendedJar())
+            .balanceMatchesIntention(command.getBalanceMatchesIntention())
+            .build()
+        );
+    }
+
+    @EventSourcingHandler
+    public void on(EntryJarUpdatedEvent event) {
+        intendedJar = event.getIntendedJar();
+        balanceMatchesIntention = event.getBalanceMatchesIntention();
+    }
+
+    @CommandHandler
+    public void handle(EntryUpdateStatusCommand command) {
+        Boolean balanceMatchesIntention = command.getBalanceMatchesIntention();
+        if (Objects.equals(this.balanceMatchesIntention, balanceMatchesIntention)) {
+            return;
+        }
+        apply(EntryStatusUpdatedEvent.builder()
+            .entryId(command.getId())
+            .balanceMatchesIntention(command.getBalanceMatchesIntention())
+            .build()
+        );
+    }
+
+    @EventSourcingHandler
+    public void on(EntryStatusUpdatedEvent event) {
+        balanceMatchesIntention = event.getBalanceMatchesIntention();
     }
 }

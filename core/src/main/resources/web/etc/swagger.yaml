@@ -229,12 +229,12 @@ paths:
       responses:
         200:
           description: Successful operation
-  /api/compound/{id}/targetJar:
+  /api/compound/{id}/intended-jar:
     post:
       tags:
       - Ledger
-      description: Set the target Jar for the Compound Transaction
-      operationId: setTargetJar
+      description: Set the intended Jar for the Compound Transaction
+      operationId: setIntendedJar
       consumes:
       - application/json
       parameters:
@@ -244,8 +244,8 @@ paths:
         required: true
         type: string
       - in: body
-        name: targetJar
-        description: The target Jar
+        name: intendedJar
+        description: The intended Jar
         required: true
         schema:
           $ref: "#/definitions/JarData"
@@ -390,10 +390,16 @@ definitions:
         type: string
       key:
         type: string
+      intendedJar:
+        type: string
       members:
-        type: array
-        items:
+        type: object
+        additionalProperties:
           $ref: "#/definitions/CompoundMemberData"
+      balance:
+        type: object
+        additionalProperties:
+          type: integer
   CompoundMemberData:
     type: object
     properties:

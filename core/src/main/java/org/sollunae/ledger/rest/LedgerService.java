@@ -11,7 +11,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.sollunae.ledger.axon.account.command.CreateAccountCommand;
 import org.sollunae.ledger.axon.account.query.AccountAllQuery;
-import org.sollunae.ledger.axon.compound.command.CompoundUpdateTargetJarCommand;
+import org.sollunae.ledger.axon.compound.command.CompoundUpdateIntendedJarCommand;
 import org.sollunae.ledger.axon.compound.command.CreateCompoundCommand;
 import org.sollunae.ledger.axon.compound.persistence.CompoundDocument;
 import org.sollunae.ledger.axon.compound.persistence.LedgerCompoundRepository;
@@ -225,10 +225,10 @@ public class LedgerService implements LedgerApiDelegate {
     }
 
     @Override
-    public ResponseEntity<Void> setTargetJar(String id, JarData targetJar) {
-        commandGateway.sendAndWait(CompoundUpdateTargetJarCommand.builder()
+    public ResponseEntity<Void> setIntendedJar(String id, JarData intendedJar) {
+        commandGateway.sendAndWait(CompoundUpdateIntendedJarCommand.builder()
             .id(id)
-            .targetJar(targetJar.getCode())
+            .intendedJar(intendedJar.getCode())
             .build()
         );
         return null;
@@ -274,8 +274,17 @@ public class LedgerService implements LedgerApiDelegate {
                         }
                         compound.setId(compoundId);
                         LOGGER.info("Import compound: {}: {}", compound.getId(), compound.getKey());
+                        String intendedJar = compound.getIntendedJar();
+                        if (intendedJar != null) {
+                            LOGGER.debug("Set intended jar: {}: {}", compoundId, intendedJar);
+                            CompoundUpdateIntendedJarCommand command = CompoundUpdateIntendedJarCommand.builder()
+                                .id(compoundId)
+                                .intendedJar(intendedJar)
+                                .build();
+                            commandGateway.sendAndWait(command);
+                        }
                         int failedMembers = 0;
-                        for (CompoundMemberData member : compound.getMembers()) {
+                        for (CompoundMemberData member : compound.getMembers().values()) {
                             if (addMemberToCompound(compoundId, member).getStatusCodeValue() > 299) {
                                 failedMembers++;
                             }

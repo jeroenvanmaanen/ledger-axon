@@ -7,10 +7,8 @@ import org.slf4j.LoggerFactory;
 import org.sollunae.ledger.axon.account.persistence.AccountDocument;
 import org.sollunae.ledger.axon.entry.aggregate.Entry;
 import org.sollunae.ledger.axon.entry.command.EntryUpdateDataCommand;
-import org.sollunae.ledger.axon.entry.event.EntryCompoundAddedEvent;
-import org.sollunae.ledger.axon.entry.event.EntryDataUpdatedEvent;
+import org.sollunae.ledger.axon.entry.event.*;
 import org.sollunae.ledger.axon.entry.persistence.EntryDocument;
-import org.sollunae.ledger.axon.entry.event.EntryCreatedEvent;
 import org.sollunae.ledger.model.AccountData;
 import org.sollunae.ledger.model.EntryData;
 import org.sollunae.ledger.util.StringUtil;
@@ -95,6 +93,30 @@ public class EntryEventHandler {
         String compoundId = event.getCompoundId();
         Query query = Query.query(Criteria.where("id").is(entryId));
         Update update = Update.update("id", entryId).set("compoundId", compoundId).set("_class", EntryDocument.class.getCanonicalName());
+        mongoTemplate.upsert(query, update, Entry.class);
+    }
+
+    @EventHandler
+    public void on(EntryJarUpdatedEvent event, MongoTemplate mongoTemplate) {
+        String entryId = event.getEntryId();
+        String intendedJar = event.getIntendedJar();
+        Boolean status = event.getBalanceMatchesIntention();
+        Query query = Query.query(Criteria.where("id").is(entryId));
+        Update update = Update.update("id", entryId)
+            .set("intendedJar", intendedJar)
+            .set("balanceMatchesIntention", status)
+            .set("_class", EntryDocument.class.getCanonicalName());
+        mongoTemplate.upsert(query, update, Entry.class);
+    }
+
+    @EventHandler
+    public void on(EntryStatusUpdatedEvent event, MongoTemplate mongoTemplate) {
+        String entryId = event.getEntryId();
+        Boolean status = event.getBalanceMatchesIntention();
+        Query query = Query.query(Criteria.where("id").is(entryId));
+        Update update = Update.update("id", entryId)
+            .set("balanceMatchesIntention", status)
+            .set("_class", EntryDocument.class.getCanonicalName());
         mongoTemplate.upsert(query, update, Entry.class);
     }
 }

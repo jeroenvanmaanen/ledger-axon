@@ -16,4 +16,6 @@ public class EntryDocument {
 
     private EntryData data;
     private String compoundId;
+    private String intendedJar;
+    private Boolean balanceMatchesIntention;
 }

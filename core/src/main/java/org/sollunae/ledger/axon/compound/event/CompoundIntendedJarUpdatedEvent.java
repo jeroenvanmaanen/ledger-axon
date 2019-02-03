@@ -4,14 +4,14 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import lombok.Builder;
 import lombok.Value;
 
-import java.util.Map;
+import java.util.List;
 
 @Value
 @Builder
-@JsonDeserialize(builder = CompoundBalanceUpdatedEvent.CompoundBalanceUpdatedEventBuilder.class)
-public class CompoundBalanceUpdatedEvent {
+@JsonDeserialize(builder = CompoundIntendedJarUpdatedEvent.CompoundIntendedJarUpdatedEventBuilder.class)
+public class CompoundIntendedJarUpdatedEvent {
     private String compoundId;
-    private Map<String,Long> balance;
-    private String affected;
+    private String intendedJar;
     private boolean balanceMatchesIntention;
+    private List<String> entryIds;
 }

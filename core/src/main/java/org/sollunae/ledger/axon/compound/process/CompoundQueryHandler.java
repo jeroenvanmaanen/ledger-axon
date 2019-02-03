@@ -35,8 +35,7 @@ public class CompoundQueryHandler {
     private CompoundData toCompoundData(CompoundDocument document) {
         CompoundData result = new CompoundData();
         result.setId(document.getId());
-        List<CompoundMemberData> members = new ArrayList<>(document.getMemberMap().values());
-        result.setMembers(members);
+        result.setMembers(document.getMemberMap());
         return result;
     }
 }

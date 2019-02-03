@@ -6,10 +6,10 @@ import org.axonframework.modelling.command.TargetAggregateIdentifier;
 
 @Value
 @Builder
-public class CompoundUpdateTargetJarCommand {
+public class CompoundUpdateIntendedJarCommand {
 
     @TargetAggregateIdentifier
     private String id;
 
-    private String targetJar;
+    private String intendedJar;
 }

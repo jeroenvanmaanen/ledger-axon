@@ -7,7 +7,10 @@ import org.slf4j.LoggerFactory;
 import org.sollunae.ledger.axon.compound.command.CompoundRebalanceCommand;
 import org.sollunae.ledger.axon.compound.event.*;
 import org.sollunae.ledger.axon.compound.persistence.CompoundDocument;
+import org.sollunae.ledger.axon.entry.command.EntryUpdateJarCommand;
+import org.sollunae.ledger.axon.entry.command.EntryUpdateStatusCommand;
 import org.sollunae.ledger.model.CompoundMemberData;
+import org.sollunae.ledger.util.StringUtil;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
@@ -55,18 +58,44 @@ public class CompoundEventHandler {
     }
 
     @EventHandler
-    public void on(CompoundTargetJarUpdatedEvent event, MongoTemplate mongoTemplate) {
+    public void on(CompoundIntendedJarUpdatedEvent event, MongoTemplate mongoTemplate, CommandGateway commandGateway) {
         String compoundId = event.getCompoundId();
-        Update update = Update.update("targetJar", event.getTargetJar())
-            .set("balanceMatchesTarget", event.isBalanceMatchesTarget());
+        Update update = Update.update("intendedJar", event.getIntendedJar())
+            .set("balanceMatchesIntention", event.isBalanceMatchesIntention());
         upsert(update, compoundId, mongoTemplate);
+        LOGGER.trace("Send EntryUpdateJarCommands to: {}", StringUtil.asString(event.getEntryIds()));
+        for (String entryId : event.getEntryIds()) {
+            LOGGER.trace("Send EntryUpdateJarCommand to: {}", entryId);
+            commandGateway.sendAndWait(EntryUpdateJarCommand.builder()
+                .id(entryId)
+                .intendedJar(event.getIntendedJar())
+                .balanceMatchesIntention(event.isBalanceMatchesIntention())
+                .build()
+            );
+        }
+    }
+
+    @EventHandler
+    public void on(CompoundStatusUpdatedEvent event, MongoTemplate mongoTemplate, CommandGateway commandGateway) {
+        String compoundId = event.getCompoundId();
+        Update update = Update.update("balanceMatchesIntention", event.getBalanceMatchesIntention());
+        upsert(update, compoundId, mongoTemplate);
+        LOGGER.trace("Send EntryUpdateStatusCommands to: {}", StringUtil.asString(event.getEntryIds()));
+        for (String entryId : event.getEntryIds()) {
+            LOGGER.trace("Send EntryUpdateStatusCommand to: {}", entryId);
+            commandGateway.sendAndWait(EntryUpdateStatusCommand.builder()
+                .id(entryId)
+                .balanceMatchesIntention(event.getBalanceMatchesIntention())
+                .build()
+            );
+        }
     }
 
     @EventHandler
     public void on(CompoundBalanceUpdatedEvent event, MongoTemplate mongoTemplate) {
         String compoundId = event.getCompoundId();
         Update update = Update.update("balance", event.getBalance())
-            .set("balanceMatchesTarget", event.isBalanceMatchesTarget());
+            .set("balanceMatchesIntention", event.isBalanceMatchesIntention());
         upsert(update, compoundId, mongoTemplate);
     }
 

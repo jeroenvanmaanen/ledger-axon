@@ -75,7 +75,7 @@ do
     log "VARIABLE=[${VARIABLE}]"
     substitute "${VARIABLE}"
 done
-"${SILENT}" || diff "${TEMPLATE}" "${TARGET}" || true
+"${SILENT}" || diff -u "${TEMPLATE}" "${TARGET}" || true
 
 (
     cd "${COMPOSE}"

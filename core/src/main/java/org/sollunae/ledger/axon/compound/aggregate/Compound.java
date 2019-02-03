@@ -18,6 +18,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
 import static org.axonframework.modelling.command.AggregateLifecycle.apply;
+import static org.sollunae.ledger.util.StringUtil.asString;
 
 @Aggregate
 @Getter
@@ -29,7 +30,7 @@ public class Compound {
     private String id;
 
     private String key = null;
-    private String targetJar = "?";
+    private String intendedJar = "?";
     private List<String> entryIds = new ArrayList<>();
     private Map<String,CompoundMemberData> members = new HashMap<>();
     private Map<String,Long> balance = new HashMap<>();
@@ -61,24 +62,25 @@ public class Compound {
     }
 
     @CommandHandler
-    public void handle(CompoundUpdateTargetJarCommand command) {
-        if (Objects.equals(targetJar, command.getTargetJar())) {
-            LOGGER.debug("Target jar unchanged: {}: {}", id, targetJar);
+    public void handle(CompoundUpdateIntendedJarCommand command) {
+        if (Objects.equals(intendedJar, command.getIntendedJar())) {
+            LOGGER.debug("Target jar unchanged: {}: {}", id, intendedJar);
             return;
         }
-        String newTargetJar = command.getTargetJar();
-        LOGGER.debug("Target jar: {}: {} -> {}", id, targetJar, newTargetJar);
-        targetJar = newTargetJar;
-        apply(CompoundTargetJarUpdatedEvent.builder()
+        String newIntendedJar = command.getIntendedJar();
+        LOGGER.debug("Target jar: {}: {} -> {}", id, intendedJar, newIntendedJar);
+        intendedJar = newIntendedJar;
+        apply(CompoundIntendedJarUpdatedEvent.builder()
             .compoundId(command.getId())
-            .targetJar(command.getTargetJar())
-            .balanceMatchesTarget(Objects.equals(affected, targetJar))
+            .intendedJar(command.getIntendedJar())
+            .balanceMatchesIntention(Objects.equals(affected, intendedJar))
+            .entryIds(entryIds)
             .build());
     }
 
     @EventSourcingHandler
-    public void on(CompoundTargetJarUpdatedEvent event) {
-        targetJar = event.getTargetJar();
+    public void on(CompoundIntendedJarUpdatedEvent event) {
+        intendedJar = event.getIntendedJar();
     }
 
     @CommandHandler
@@ -138,16 +140,27 @@ public class Compound {
         if (newBalance.equals(balance)) {
             LOGGER.debug("Balance is unchanged");
         } else {
+            boolean oldStatus = Objects.equals(affected, intendedJar);
             balance = newBalance;
             String newAffected = computeAffected(balance);
             LOGGER.debug("Affected: {}: {} -> {}", id, affected, newAffected);
             affected = newAffected;
+            boolean newStatus = Objects.equals(affected, intendedJar);
             apply(CompoundBalanceUpdatedEvent.builder()
                 .compoundId(command.getId())
                 .balance(balance)
                 .affected(affected)
-                .balanceMatchesTarget(Objects.equals(affected, targetJar))
+                .balanceMatchesIntention(newStatus)
                 .build());
+            LOGGER.trace("Status: old: {}: new: {}", oldStatus, newStatus);
+            if (newStatus != oldStatus) {
+                LOGGER.trace("Emitting compound status changed event: {}", command.getId(), asString(entryIds));
+                apply(CompoundStatusUpdatedEvent.builder()
+                    .compoundId(command.getId())
+                    .balanceMatchesIntention(newStatus)
+                    .entryIds(entryIds)
+                    .build());
+            }
         }
     }
 

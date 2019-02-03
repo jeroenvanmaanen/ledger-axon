@@ -33,6 +33,6 @@ cat "$@" \
         -e "/^        \"/s/^/|/" \
         -e '/[{]/s/^/|/' \
     | tr '|\012' '\012|' \
-    | egrep  '^([{]|.*"(key|members)")' \
+    | egrep  '^([{]|.*"(key|members|intendedJar)")' \
     | tr '|\012' '\012|' \
     | sed -e 's/^[|]//'
