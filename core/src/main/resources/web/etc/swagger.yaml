@@ -366,6 +366,12 @@ definitions:
         type: boolean
       key:
         type: string
+      compoundId:
+        type: string
+      intendedJar:
+        type: string
+      balanceMatchesIntention:
+        type: boolean
   ArrayOfEntryData:
     type: array
     items:

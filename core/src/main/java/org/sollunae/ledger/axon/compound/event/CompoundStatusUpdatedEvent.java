@@ -11,6 +11,7 @@ import java.util.List;
 @JsonDeserialize(builder = CompoundStatusUpdatedEvent.CompoundStatusUpdatedEventBuilder.class)
 public class CompoundStatusUpdatedEvent {
     private String compoundId;
+    private String intendedJar;
     private Boolean balanceMatchesIntention;
     private List<String> entryIds;
 }

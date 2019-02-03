@@ -137,15 +137,14 @@ public class Compound {
             addAmount(counters, contraJar, -member.getAmountCents());
         }
         Map<String,Long> newBalance = toBalance(counters);
-        if (newBalance.equals(balance)) {
-            LOGGER.debug("Balance is unchanged");
-        } else {
-            boolean oldStatus = Objects.equals(affected, intendedJar);
+        boolean oldStatus = Objects.equals(affected, intendedJar);
+        boolean newStatus = oldStatus;
+        if (!newBalance.equals(balance)) {
             balance = newBalance;
             String newAffected = computeAffected(balance);
             LOGGER.debug("Affected: {}: {} -> {}", id, affected, newAffected);
             affected = newAffected;
-            boolean newStatus = Objects.equals(affected, intendedJar);
+            newStatus = Objects.equals(affected, intendedJar);
             apply(CompoundBalanceUpdatedEvent.builder()
                 .compoundId(command.getId())
                 .balance(balance)
@@ -153,14 +152,26 @@ public class Compound {
                 .balanceMatchesIntention(newStatus)
                 .build());
             LOGGER.trace("Status: old: {}: new: {}", oldStatus, newStatus);
-            if (newStatus != oldStatus) {
-                LOGGER.trace("Emitting compound status changed event: {}", command.getId(), asString(entryIds));
-                apply(CompoundStatusUpdatedEvent.builder()
-                    .compoundId(command.getId())
-                    .balanceMatchesIntention(newStatus)
-                    .entryIds(entryIds)
-                    .build());
-            }
+        }
+        if (newStatus != oldStatus) {
+            LOGGER.trace("Emitting compound status changed event: {}", command.getId(), asString(entryIds));
+            apply(CompoundStatusUpdatedEvent.builder()
+                .compoundId(command.getId())
+                .intendedJar(intendedJar)
+                .balanceMatchesIntention(newStatus)
+                .entryIds(entryIds)
+                .build());
+        } else if (command.getAddedEntryId() != null) {
+            String addedEntryId = command.getAddedEntryId();
+            LOGGER.debug("Register compound status for new entry: ", addedEntryId);
+            apply(CompoundEntryUpdatedEvent.builder()
+                .compoundId(id)
+                .entryId(addedEntryId)
+                .intendedJar(intendedJar)
+                .balanceMatchesIntention(oldStatus)
+                .build());
+        } else {
+            LOGGER.debug("Balance is unchanged");
         }
     }
 

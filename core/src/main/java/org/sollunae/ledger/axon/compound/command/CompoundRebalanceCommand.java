@@ -10,4 +10,6 @@ public class CompoundRebalanceCommand {
 
     @TargetAggregateIdentifier
     private String id;
+
+    private String addedEntryId;
 }

@@ -82,6 +82,10 @@ public class EntryEventHandler {
     @EventHandler
     public void on(EntryDataUpdatedEvent event, MongoTemplate mongoTemplate) {
         EntryData entry = event.getData();
+        if (entry.getIntendedJar() == null) {
+            entry.setIntendedJar("?");
+            entry.setBalanceMatchesIntention(false);
+        }
         Query query = Query.query(Criteria.where("id").is(entry.getId()));
         Update update = Update.update("id", entry.getId()).set("data", entry).set("_class", EntryDocument.class.getCanonicalName());
         mongoTemplate.upsert(query, update, Entry.class);
@@ -92,7 +96,7 @@ public class EntryEventHandler {
         String entryId = event.getEntryId();
         String compoundId = event.getCompoundId();
         Query query = Query.query(Criteria.where("id").is(entryId));
-        Update update = Update.update("id", entryId).set("compoundId", compoundId).set("_class", EntryDocument.class.getCanonicalName());
+        Update update = Update.update("id", entryId).set("data.compoundId", compoundId).set("_class", EntryDocument.class.getCanonicalName());
         mongoTemplate.upsert(query, update, Entry.class);
     }
 
@@ -101,10 +105,11 @@ public class EntryEventHandler {
         String entryId = event.getEntryId();
         String intendedJar = event.getIntendedJar();
         Boolean status = event.getBalanceMatchesIntention();
+        LOGGER.trace("Entry Jar updated: {}: {}: {}", entryId, intendedJar, status);
         Query query = Query.query(Criteria.where("id").is(entryId));
         Update update = Update.update("id", entryId)
-            .set("intendedJar", intendedJar)
-            .set("balanceMatchesIntention", status)
+            .set("data.intendedJar", intendedJar)
+            .set("data.balanceMatchesIntention", status)
             .set("_class", EntryDocument.class.getCanonicalName());
         mongoTemplate.upsert(query, update, Entry.class);
     }
@@ -112,10 +117,13 @@ public class EntryEventHandler {
     @EventHandler
     public void on(EntryStatusUpdatedEvent event, MongoTemplate mongoTemplate) {
         String entryId = event.getEntryId();
+        String intendedJar = event.getIntendedJar();
         Boolean status = event.getBalanceMatchesIntention();
+        LOGGER.trace("Entry status updated: {}: {}", entryId, status);
         Query query = Query.query(Criteria.where("id").is(entryId));
         Update update = Update.update("id", entryId)
-            .set("balanceMatchesIntention", status)
+            .set("data.intendedJar", intendedJar)
+            .set("data.balanceMatchesIntention", status)
             .set("_class", EntryDocument.class.getCanonicalName());
         mongoTemplate.upsert(query, update, Entry.class);
     }

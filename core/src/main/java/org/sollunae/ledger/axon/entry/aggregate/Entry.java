@@ -193,6 +193,7 @@ public class Entry {
         }
         apply(EntryStatusUpdatedEvent.builder()
             .entryId(command.getId())
+            .intendedJar(command.getIntendedJar())
             .balanceMatchesIntention(command.getBalanceMatchesIntention())
             .build()
         );
@@ -200,6 +201,7 @@ public class Entry {
 
     @EventSourcingHandler
     public void on(EntryStatusUpdatedEvent event) {
+        intendedJar = event.getIntendedJar();
         balanceMatchesIntention = event.getBalanceMatchesIntention();
     }
 }

@@ -11,5 +11,6 @@ public class EntryUpdateStatusCommand {
     @TargetAggregateIdentifier
     private String id;
 
+    private String intendedJar;
     private Boolean balanceMatchesIntention;
 }

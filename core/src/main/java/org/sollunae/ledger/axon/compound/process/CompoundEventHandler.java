@@ -32,10 +32,23 @@ public class CompoundEventHandler {
     public void on(CompoundEntryAddedEvent event, MongoTemplate mongoTemplate, CommandGateway commandGateway) {
         String compoundId = event.getCompoundId();
         CompoundMemberData member = event.getMember();
-        LOGGER.info("On compound entry added event: member: {}", member.toString().replaceAll("[ \t\n]+", " "));
+        LOGGER.debug("On compound entry added event: member: {}", member.toString().replaceAll("[ \t\n]+", " "));
         Update update = Update.update("memberMap." + member.getId(), member);
         upsert(update, compoundId, mongoTemplate);
-        commandGateway.send(CompoundRebalanceCommand.builder().id(compoundId).build());
+        commandGateway.send(CompoundRebalanceCommand.builder().id(compoundId).addedEntryId(member.getId()).build());
+    }
+
+    @EventHandler
+    public void on(CompoundEntryUpdatedEvent event, CommandGateway commandGateway) {
+        String entryId = event.getEntryId();
+        String intendedJar = event.getIntendedJar();
+        Boolean status = event.getBalanceMatchesIntention();
+        LOGGER.debug("On compound entry updated event: {}: {}: {}", entryId, intendedJar, status);
+        commandGateway.send(EntryUpdateJarCommand.builder()
+            .id(entryId)
+            .intendedJar(intendedJar)
+            .balanceMatchesIntention(status)
+            .build());
     }
 
     @EventHandler
@@ -85,6 +98,7 @@ public class CompoundEventHandler {
             LOGGER.trace("Send EntryUpdateStatusCommand to: {}", entryId);
             commandGateway.sendAndWait(EntryUpdateStatusCommand.builder()
                 .id(entryId)
+                .intendedJar(event.getIntendedJar())
                 .balanceMatchesIntention(event.getBalanceMatchesIntention())
                 .build()
             );

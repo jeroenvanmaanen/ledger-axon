@@ -9,5 +9,6 @@ import lombok.Value;
 @JsonDeserialize(builder = EntryStatusUpdatedEvent.EntryStatusUpdatedEventBuilder.class)
 public class EntryStatusUpdatedEvent {
     private String entryId;
+    private String intendedJar;
     private Boolean balanceMatchesIntention;
 }
