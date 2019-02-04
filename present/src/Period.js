@@ -72,7 +72,7 @@ class Period extends Component {
           } else if (key === 'intendedJar') {
             if (record.intendedJar) {
               value = record.intendedJar;
-              if (record.intendedJar === '*' || record.balanceValid === 'yes') {
+              if (record.intendedJar === '*' || record.balanceMatchesIntention) {
                 cssClass = cssClass + ' valid';
               } else {
                 cssClass = cssClass + ' invalid';

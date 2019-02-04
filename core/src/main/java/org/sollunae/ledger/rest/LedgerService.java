@@ -22,6 +22,7 @@ import org.sollunae.ledger.axon.entry.command.EntryAddToCompoundCommand;
 import org.sollunae.ledger.axon.entry.command.EntryRemoveFromCompoundCommand;
 import org.sollunae.ledger.axon.entry.persistence.EntryDocument;
 import org.sollunae.ledger.axon.entry.persistence.LedgerEntryRepository;
+import org.sollunae.ledger.axon.entry.query.EntryByIdQuery;
 import org.sollunae.ledger.model.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -137,6 +138,21 @@ public class LedgerService implements LedgerApiDelegate {
         } catch (RuntimeException exception) {
             LOGGER.error("Exception during command execution: {}", exception.getCause(), exception);
             return ResponseEntity.status(HttpStatus.CONFLICT).body(null);
+        }
+    }
+
+    @Override
+    public ResponseEntity<EntryData> getEntry(String id) {
+        try {
+            EntryData result = queryGateway.query(EntryByIdQuery.builder().entryId(id).build(), EntryData.class).get();
+            if (result == null) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
+            } else {
+                return ResponseEntity.ok(result);
+            }
+        } catch (InterruptedException | ExecutionException e) {
+            LOGGER.error("Error getting Entry", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
         }
     }
 

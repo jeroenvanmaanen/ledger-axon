@@ -35,7 +35,11 @@ public class CompoundQueryHandler {
     private CompoundData toCompoundData(CompoundDocument document) {
         CompoundData result = new CompoundData();
         result.setId(document.getId());
+        result.setKey(document.getKey());
+        result.setIntendedJar(document.getIntendedJar());
         result.setMembers(document.getMemberMap());
+        result.setBalance(document.getBalance());
+        result.setBalanceMatchesIntention(document.getBalanceMatchesIntention());
         return result;
     }
 }

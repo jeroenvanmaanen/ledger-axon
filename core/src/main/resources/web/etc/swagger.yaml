@@ -122,6 +122,23 @@ paths:
           description: Entry created
           schema:
             type: string
+  /api/entry/{id}:
+    get:
+      tags:
+      - Ledger
+      description: Get the data of a single Entry
+      operationId: getEntry
+      parameters:
+      - in: path
+        name: id
+        description: The Id of the Entry to get
+        required: true
+        type: string
+      responses:
+        200:
+          description: Successful operation
+          schema:
+            $ref: "#/definitions/EntryData"
   /api/entry/{id}/compound/{compoundId}:
     post:
       tags:
@@ -406,6 +423,9 @@ definitions:
         type: object
         additionalProperties:
           type: integer
+          format: int64
+      balanceMatchesIntention:
+        type: boolean
   CompoundMemberData:
     type: object
     properties:

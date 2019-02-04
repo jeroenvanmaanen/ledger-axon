@@ -6,8 +6,13 @@ import org.slf4j.LoggerFactory;
 import org.sollunae.ledger.axon.entry.persistence.EntryDocument;
 import org.sollunae.ledger.axon.entry.persistence.LedgerEntryRepository;
 import org.sollunae.ledger.axon.entry.query.EntriesWithDatePrefixQuery;
+import org.sollunae.ledger.axon.entry.query.EntryByIdQuery;
 import org.sollunae.ledger.model.ArrayOfEntryData;
+import org.sollunae.ledger.model.EntryData;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Component;
 
 import java.lang.invoke.MethodHandles;
@@ -15,6 +20,7 @@ import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
@@ -23,10 +29,20 @@ public class EntryQueryHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
     private final LedgerEntryRepository ledgerEntryRepository;
+    private final MongoTemplate mongoTemplate;
 
     @Autowired
-    public EntryQueryHandler(LedgerEntryRepository ledgerEntryRepository) {
+    public EntryQueryHandler(LedgerEntryRepository ledgerEntryRepository, MongoTemplate mongoTemplate) {
         this.ledgerEntryRepository = ledgerEntryRepository;
+        this.mongoTemplate = mongoTemplate;
+    }
+
+    @QueryHandler
+    public EntryData query(EntryByIdQuery query) {
+        Query mongoQuery = Query.query(Criteria.where("_id").is(query.getEntryId()));
+        return Optional.ofNullable(mongoTemplate.findOne(mongoQuery, EntryDocument.class))
+            .map(EntryDocument::getData)
+            .orElse(null);
     }
 
     @QueryHandler
