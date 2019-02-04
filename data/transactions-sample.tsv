@@ -1,2 +1,5 @@
-Datum	Naam / Omschrijving	Rekening	Tegenrekening	Code	Af Bij	Bedrag (EUR)	MutatieSoort	Mededelingen
-20171219	My Account	123456	987654	BA	Af	12,34	Online bankieren	Factuurnummer: 666
+"Datum"	"Naam / Omschrijving"	"Rekening"	"Tegenrekening"	"Code"	"Af Bij"	"Bedrag (EUR)"	"MutatieSoort"	"Mededelingen"
+"20171219"	"My Account"	"123456"	"8888"	"BA"	"Af"	"12,34"	"Online bankieren"	"Factuurnummer: 666"
+"20171220"	"My Account"	"987444"	"123456"	"BA"	"Af"	"12,34"	"Online bankieren"	"Factuurnummer: 666"
+"20171221"	"My Account"	"987654"	"1414"	"BA"	"Af"	"12,34"	"Online bankieren"	"Factuurnummer: 666"
+"20171222"	"My Account"	"987333"	"987654"	"BA"	"Af"	"12,34"	"Online bankieren"	"Factuurnummer: 666"
