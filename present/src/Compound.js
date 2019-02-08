@@ -17,7 +17,7 @@ class Compound extends Component {
     this.getAccounts = this.getAccounts.bind(this);
     this.isMember = this.isMember.bind(this);
     this.state = {
-      _id: '',
+      id: '',
       label: '',
       transactions: [],
       balance: {},
@@ -275,19 +275,19 @@ class Compound extends Component {
     const transactionId = target.getAttribute('data-id');
     const transactionKey = target.getAttribute('data-key');
     const date = this.getField(target, 'date');
-    const amount = this.getField(target, 'amountCents');
+    const amountCents = this.getField(target, 'amountCents');
     const jar = this.getJar(target, 'account');
     const contraJar = this.getJar(target, 'contraAccount');
     const transaction = {
-        _id: transactionId,
+        id: transactionId,
         key: transactionKey,
         date: date,
-        amount: amount,
+        amountCents: amountCents,
         jar: jar,
         contraJar: contraJar
     };
     const transactionRef = {
-        _id: transactionId,
+        id: transactionId,
         key: transactionKey
     };
     var stateChange = {};
@@ -296,11 +296,12 @@ class Compound extends Component {
         console.log('Toggle');
         transactions = this.state.transactions;
         if (transactions.some(t => t.key === transactionKey)) {
-            console.log('Remove');
-            transactions = transactions.filter(t => t.key !== transactionKey);
-            if (transactions.length === 1 && this.state.compoundId) {
-                await this.deleteCompound(this.getRef(transactions[0]), this.state.compoundId);
-                stateChange.compoundId = undefined;
+            if (transactions.length !== 1 || !this.state.compoundId) {
+                console.log('Remove')
+                transactions = transactions.filter(t => t.key !== transactionKey);
+            } else {
+                console.log('Do not remove last transaction')
+                return;
             }
         } else {
             console.log('Add');
@@ -314,15 +315,15 @@ class Compound extends Component {
             }
         }
     } else {
-        console.log('Singleton:', transaction._id, transaction);
+        console.log('Singleton:', transaction.id, transaction);
         transactions = [ transaction ];
-        stateChange._id = '';
+        stateChange.id = '';
         stateChange.label = '';
         stateChange.compoundId = '';
         stateChange.compoundRef = '';
         stateChange.intendedJar = transaction.intendedJar;
         stateChange.balanceMatchesIntention = transaction.balanceMatchesIntention;
-        const entry = await this.getEntry({key: transaction._id})
+        const entry = await this.getEntry({key: transaction.id})
         const compoundId = entry.compoundId;
         if (compoundId) {
             const result = await REST('/api/compound/' + compoundId);
@@ -348,11 +349,8 @@ class Compound extends Component {
   }
 
   updateBalance(newState, toggle, transactionRef) {
-    var newBalance = newState.balance;
-    if (!newBalance) {
-        newBalance = {};
-        newState.balance = newBalance;
-    }
+    var newBalance = this.computeBalance(newState.transactions);
+    newState.balance = newBalance;
     this.setState({ balance: newBalance });
     var jars = [];
     Object.keys(newBalance).forEach((key) => {
@@ -367,7 +365,7 @@ class Compound extends Component {
     newState.jars = jars;
     const balanceMatchesIntention = this.isBalanceMatchesIntention(jars.join(), this.state.intendedJar);
     const update = (this.state.balanceMatchesIntention !== balanceMatchesIntention);
-    console.log('Balance valid:', jars.join(), this.state.intendedJar, balanceMatchesIntention, update);
+    console.log('Balance matches intention:', jars.join(), this.state.intendedJar, balanceMatchesIntention, update);
     if (update) {
         newState.balanceMatchesIntention = balanceMatchesIntention;
     }
@@ -380,6 +378,20 @@ class Compound extends Component {
 
   isBalanceMatchesIntention(jars, intendedJar) {
     return jars === intendedJar;
+  }
+
+  computeBalance(transactions) {
+    var balance = {};
+    transactions.forEach(transaction => {
+        const jar = transaction.jar;
+        const amountCents = transaction.amountCents;
+        if (!balance[jar]) {
+            balance[jar] = amountCents;
+        } else {
+            balance[jar] = balance[jar] + amountCents;
+        }
+    });
+    return balance;
   }
 
   getField(node, key) {
@@ -450,9 +462,7 @@ class Compound extends Component {
             if (this.contains(newState, transactionRef)) {
                 console.log('Compound: load:', transactionRef.key);
             } else {
-                console.log('Compound: delete:', transactionRef.key);
-                this.unlinkTransaction(transactionRef);
-                this.updateTransactions(update, newState);
+                console.log('Compound: last transaction:', transactionRef.key);
             }
         } else if (newState.transactions.length === 1) {
             this.saveLabel(newState, this.getRef(newState.transactions[0]));
@@ -508,7 +518,7 @@ class Compound extends Component {
     console.log('Save transaction:', transactionRef);
     const compoundId = newState.compoundId || this.state.compoundId;
     var newLabel = {
-      transactionId: transactionRef._id,
+      transactionId: transactionRef.id,
       transactionKey: transactionRef.key
     };
     newLabel.compoundId = compoundId;
@@ -550,7 +560,7 @@ class Compound extends Component {
     const key = transaction.key;
     const pair = key.split('_');
     return {
-      _id: transaction._id,
+      id: transaction.id,
       key: transaction.key,
       date: pair[0],
       nr: parseInt(pair[1], 10)
@@ -574,12 +584,12 @@ class Compound extends Component {
     var transactionSummaries = []
     transactions.forEach(transaction => {
       transactionSummaries.push({
-        _id: transaction._id,
+        id: transaction.id,
         key: transaction.key,
         date: transaction.date,
         jar: transaction.jar,
         contraJar: transaction.contraJar,
-        amount: transaction.amount
+        amountCents: transaction.amountCents
       });
     });
     return transactionSummaries;
@@ -597,7 +607,7 @@ class Compound extends Component {
   async getLabelId(transactionRef) {
     const label = await this.getLabel(transactionRef);
     console.log("Get label ID:", transactionRef, label);
-    return label ? label.id : transactionRef._id;
+    return label ? label.id : transactionRef.id;
   }
 
   async insertCompound(transactionRef, newState) {
@@ -639,11 +649,19 @@ class Compound extends Component {
     if (!compoundId) {
       return;
     }
+    await REST({
+      method: 'POST',
+      path: '/api/entry/' + transactionRef.id + '/compound/' + newState.compoundId
+    });
     await this.saveLabel(newState, transactionRef);
   }
 
   async unlinkTransaction(transactionRef) {
-    console.log('Unlink transaction') // TODO
+    console.log('Unlink transaction')
+    await REST({
+      method: 'DELETE',
+      path: '/api/entry/' + transactionRef.id + '/compound'
+    });
     this.state.staticTransactions.forEach((transaction) => {
       if (transaction.key === transactionRef.key) {
         transaction.label = '';
