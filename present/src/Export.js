@@ -41,7 +41,7 @@ class Export extends Component {
               value = record.intendedJar;
               if (record.intendedJar === '*') {
                 value = '*';
-              } else if (record.balanceValid === 'yes') {
+              } else if (record.balanceMatchesIntention) {
                 value = '+' + value;
               } else {
                 value = '-' + value;

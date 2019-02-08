@@ -21,7 +21,7 @@ class Compound extends Component {
       label: '',
       transactions: [],
       balance: {},
-      balanceValid: '',
+      balanceMatchesIntention: false,
       jars: '',
       intendedJar: '*',
       compoundId: undefined,
@@ -61,7 +61,7 @@ class Compound extends Component {
                             if (account.key === this.state.intendedJar) {
                               cssClass = cssClass + ' intended';
                               handler = this.handleJarChangeFunction('?');
-                              if (this.state.balanceValid === 'yes') {
+                              if (this.state.balanceMatchesIntention) {
                                 cssClass = cssClass + ' valid';
                               }
                             }
@@ -229,7 +229,7 @@ class Compound extends Component {
 
   changeIntendedJar(intendedJar) {
     this.setState({ intendedJar: intendedJar });
-    this.saveState({ intendedJar: intendedJar, balanceValid: this.isBalanceValid(this.state.jars, intendedJar) });
+    this.saveState({ intendedJar: intendedJar, balanceMatchesIntention: this.isBalanceMatchesIntention(this.state.jars, intendedJar) });
   }
 
   findTransactionElement(event) {
@@ -321,7 +321,7 @@ class Compound extends Component {
         stateChange.compoundId = '';
         stateChange.compoundRef = '';
         stateChange.intendedJar = transaction.intendedJar;
-        stateChange.balanceValid = transaction.balanceValid;
+        stateChange.balanceMatchesIntention = transaction.balanceMatchesIntention;
         const entry = await this.getEntry({key: transaction._id})
         const compoundId = entry.compoundId;
         if (compoundId) {
@@ -336,7 +336,7 @@ class Compound extends Component {
                 stateChange.label = compound.label || '';
                 stateChange.intendedJar = compound.intendedJar;
                 stateChange.balance = compound.balance;
-                stateChange.balanceValid = compound.balanceMatchesIntention;
+                stateChange.balanceMatchesIntention = compound.balanceMatchesIntention;
                 transactions = stateChange.transactions;
             }
         }
@@ -365,21 +365,21 @@ class Compound extends Component {
         jars.push(key);
     });
     newState.jars = jars;
-    const balanceValid = this.isBalanceValid(jars.join(), this.state.intendedJar);
-    const update = (this.state.balanceValid === 'yes') !== (balanceValid === 'yes');
-    console.log('Balance valid:', jars.join(), this.state.intendedJar, balanceValid, update);
+    const balanceMatchesIntention = this.isBalanceMatchesIntention(jars.join(), this.state.intendedJar);
+    const update = (this.state.balanceMatchesIntention !== balanceMatchesIntention);
+    console.log('Balance valid:', jars.join(), this.state.intendedJar, balanceMatchesIntention, update);
     if (update) {
-        newState.balanceValid = balanceValid;
+        newState.balanceMatchesIntention = balanceMatchesIntention;
     }
     newState.compoundRef = this.getCompoundRef(newState.transactions);
-    this.setState({ jars: jars.join(), balanceValid: balanceValid, compoundRef: newState.compoundRef });
+    this.setState({ jars: jars.join(), balanceMatchesIntention: balanceMatchesIntention, compoundRef: newState.compoundRef });
     if (toggle || update) {
         this.saveState(newState, transactionRef)
     }
   }
 
-  isBalanceValid(jars, intendedJar) {
-    return (jars === intendedJar) ? 'yes' : 'no';
+  isBalanceMatchesIntention(jars, intendedJar) {
+    return jars === intendedJar;
   }
 
   getField(node, key) {
@@ -462,7 +462,7 @@ class Compound extends Component {
   }
 
   updateTransactions(update, newState, force) {
-    if (update.intendedJar || update.balanceValid || update.label || force) {
+    if (update.intendedJar || update.balanceMatchesIntention || update.balanceMatchesIntention === false || update.label || force) {
         newState.transactions.forEach((transaction) => {
             console.log('Update transactions: saveTransaction:', transaction);
             this.saveTransaction(newState, this.getRef(transaction));
@@ -470,7 +470,7 @@ class Compound extends Component {
         this.state.staticTransactions.forEach((transaction) => {
             if (this.contains(newState, this.getRef(transaction))) {
                 transaction.intendedJar = newState.intendedJar;
-                transaction.balanceValid = newState.balanceValid;
+                transaction.balanceMatchesIntention = newState.balanceMatchesIntention;
                 transaction.compoundRef = newState.compoundRef;
                 console.log('Updated transaction:', transaction);
             }
@@ -514,7 +514,7 @@ class Compound extends Component {
     newLabel.compoundId = compoundId;
     newLabel.label = newState.label;
     newLabel.intendedJar = newState.intendedJar;
-    newLabel.balanceValid = newState.balanceValid;
+    newLabel.balanceMatchesIntention = newState.balanceMatchesIntention;
     newLabel.compoundRef = newState.compoundRef;
     console.log("New label:", newLabel);
     // TODO
@@ -648,7 +648,7 @@ class Compound extends Component {
       if (transaction.key === transactionRef.key) {
         transaction.label = '';
         transaction.intendedJar = '';
-        transaction.balanceValid = '';
+        transaction.balanceMatchesIntention = false;
         transaction.compoundRef = '';
       }
     });
