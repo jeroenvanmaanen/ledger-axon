@@ -31,8 +31,11 @@ cat "$@" \
         -e 's/"transactions"/"members"/' \
         -e 's/"amount"/"amountCents"/' \
         -e "/^        \"/s/^/|/" \
+        -e 's/[[]$/{/' \
+        -e 's/[]]$/}/' \
         -e '/[{]/s/^/|/' \
     | tr '|\012' '\012|' \
     | egrep  '^([{]|.*"(key|members|intendedJar)")' \
+    | sed "${SED_EXT}" -e 's/[{](.*"key" *: *)([^,]*)/\2 : {\1\2/' \
     | tr '|\012' '\012|' \
     | sed -e 's/^[|]//'
