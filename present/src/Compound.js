@@ -385,7 +385,7 @@ class Compound extends Component {
     transactions.forEach(transaction => {
         const jar = transaction.jar;
         const contraJar = transaction.contraJar;
-        const amountCents = transaction.amountCents;
+        const amountCents = Number(transaction.amountCents);
         if (!balance[jar]) {
             balance[jar] = amountCents;
         } else {
