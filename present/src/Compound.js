@@ -384,11 +384,17 @@ class Compound extends Component {
     var balance = {};
     transactions.forEach(transaction => {
         const jar = transaction.jar;
+        const contraJar = transaction.contraJar;
         const amountCents = transaction.amountCents;
         if (!balance[jar]) {
             balance[jar] = amountCents;
         } else {
             balance[jar] = balance[jar] + amountCents;
+        }
+        if (!balance[contraJar]) {
+            balance[contraJar] = -amountCents;
+        } else {
+            balance[contraJar] = balance[contraJar] - amountCents;
         }
     });
     return balance;
@@ -443,8 +449,18 @@ class Compound extends Component {
     Object.keys(update).forEach((key) => {
         newState[key] = update[key];
     });
-    const isCompound = newState.transactions.length > 1;
+    if (!newState.compoundId && newState.transactions.length === 1 && (newState.label || newState.intendedJar)) {
+        const newCompoundId = await this.createCompound(newState);
+        console.log('New compound id:', newCompoundId);
+        transactionRef = { id: newState.transactions[0].id, key: newState.transactions[0].key };
+        console.log('Transaction reference:', transactionRef);
+    }
+    const isCompound = !!newState.compoundId;
+    console.log('Is compound', isCompound, newState);
     if (isCompound) {
+        if (update.intendedJar) {
+          await this.setIntendedJar(newState);
+        }
         console.log('Compound: update new state:', newState);
         if (transactionRef) {
             if (this.contains(newState, transactionRef)) {
@@ -611,39 +627,52 @@ class Compound extends Component {
   }
 
   async insertCompound(transactionRef, newState) {
-    var compound = {};
-    compound.label = newState.label;
-    compound.transactions = this.summarize(newState.transactions);
-    compound.balance = newState.balance;
+    console.log("Insert compound");
+    const compoundId = await this.createCompound(newState);
+    await this.linkTransaction(transactionRef, newState);
+    return compoundId;
+  }
+
+  async createCompound(newState) {
     const result = await REST({
       method: 'POST',
       path: '/api/compound',
       headers: {
         'Content-Type': 'application/json'
-      },
-      entity: compound
+      }
     });
-    console.log("Insert compound", result);
-    const compoundId = result.entity.id;
+    console.log("Create compound", result);
+    const compoundId = result.entity;
     newState.compoundId = compoundId;
-    await this.linkTransaction(transactionRef, newState);
-    this.setState({compoundId: compoundId})
+    this.setState({compoundId: compoundId});
+    await this.setIntendedJar(newState);
     return compoundId;
   }
 
-  async deleteCompound(transactionRef, compoundId) {
-    if (compoundId) {
-        var newState = this.copyState();
-        newState.compoundId = undefined;
-        this.saveLabel(newState, transactionRef);
-        await REST({
-          method: 'DELETE',
-          path: '/api/compound/' + compoundId
-        });
+  async setIntendedJar(newState) {
+    if (!newState.compoundId) {
+      console.log('No compoundId specified');
+      return;
     }
+    if (!newState.intendedJar) {
+      console.log('No intended Jar specified');
+      return;
+    }
+    const compoundId = newState.compoundId;
+    const jarData = { code: newState.intendedJar };
+    const result = await REST({
+      method: 'POST',
+      path: '/api/compound/' + compoundId + '/intended-jar',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      entity: jarData
+    });
+    console.log("Set intended jar", result);
   }
 
   async linkTransaction(transactionRef, newState) {
+    console.log('Link transaction:', transactionRef, newState);
     const state = newState || this.state;
     const compoundId = state.compoundId;
     if (!compoundId) {
@@ -651,7 +680,7 @@ class Compound extends Component {
     }
     await REST({
       method: 'POST',
-      path: '/api/entry/' + transactionRef.id + '/compound/' + newState.compoundId
+      path: '/api/entry/' + transactionRef.id + '/compound/' + compoundId
     });
     await this.saveLabel(newState, transactionRef);
   }

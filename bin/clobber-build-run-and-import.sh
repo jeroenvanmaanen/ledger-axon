@@ -25,6 +25,7 @@ DO_BUILD='true'
 if [[ ".$1" = '.--skip-build' ]]
 then
   DO_BUILD='false'
+  shift
 fi
 
 "${BIN}/swagger-yaml-to-json.sh"
