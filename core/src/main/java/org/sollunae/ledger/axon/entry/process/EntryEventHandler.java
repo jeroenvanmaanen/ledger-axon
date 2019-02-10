@@ -27,12 +27,20 @@ public class EntryEventHandler {
     private static final String BIJ = "Bij";
     private static final String CREDIT = "Credit";
 
+    private final CommandGateway commandGateway;
+    private final MongoTemplate mongoTemplate;
+
+    public EntryEventHandler(CommandGateway commandGateway, MongoTemplate mongoTemplate) {
+        this.commandGateway = commandGateway;
+        this.mongoTemplate = mongoTemplate;
+    }
+
     @EventHandler
-    public void on(EntryCreatedEvent entryCreatedEvent, MongoTemplate mongoTemplate, CommandGateway commandGateway) {
+    public void on(EntryCreatedEvent entryCreatedEvent) {
         EntryData entry = entryCreatedEvent.getData();
 
-        AccountDocument thisAccount = findAccount(entry.getAccount(), mongoTemplate);
-        AccountDocument contraAccount = findAccount(entry.getContraAccount(), mongoTemplate);
+        AccountDocument thisAccount = findAccount(entry.getAccount());
+        AccountDocument contraAccount = findAccount(entry.getContraAccount());
         boolean hide = thisAccount != null && contraAccount != null &&  thisAccount.getData().getDepth() > contraAccount.getData().getDepth();
         entry.setHidden(hide);
 
@@ -74,13 +82,13 @@ public class EntryEventHandler {
         ;
     }
 
-    private AccountDocument findAccount(String accountId, MongoTemplate mongoTemplate) {
+    private AccountDocument findAccount(String accountId) {
         Query query = Query.query(Criteria.where("id").is(accountId));
         return mongoTemplate.findOne(query, AccountDocument.class);
     }
 
     @EventHandler
-    public void on(EntryDataUpdatedEvent event, MongoTemplate mongoTemplate) {
+    public void on(EntryDataUpdatedEvent event) {
         EntryData entry = event.getData();
         if (entry.getIntendedJar() == null) {
             entry.setIntendedJar("?");
@@ -92,11 +100,19 @@ public class EntryEventHandler {
     }
 
     @EventHandler
-    public void on(EntryCompoundAddedEvent event, MongoTemplate mongoTemplate) {
+    public void on(EntryCompoundAddedEvent event) {
         String entryId = event.getEntryId();
         String compoundId = event.getCompoundId();
         Query query = Query.query(Criteria.where("id").is(entryId));
         Update update = Update.update("id", entryId).set("data.compoundId", compoundId).set("_class", EntryDocument.class.getCanonicalName());
+        mongoTemplate.upsert(query, update, Entry.class);
+    }
+
+    @EventHandler
+    public void on(EntryCompoundRemovedEvent event) {
+        String entryId = event.getEntryId();
+        Query query = Query.query(Criteria.where("id").is(entryId));
+        Update update = Update.update("id", entryId).unset("data.compoundId").set("_class", EntryDocument.class.getCanonicalName());
         mongoTemplate.upsert(query, update, Entry.class);
     }
 
