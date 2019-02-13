@@ -1,4 +1,4 @@
-package org.sollunae.ledger.spring;
+package org.sollunae.ledger.rest;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

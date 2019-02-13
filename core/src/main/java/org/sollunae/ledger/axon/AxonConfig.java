@@ -1,4 +1,4 @@
-package org.sollunae.ledger.spring;
+package org.sollunae.ledger.axon;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
