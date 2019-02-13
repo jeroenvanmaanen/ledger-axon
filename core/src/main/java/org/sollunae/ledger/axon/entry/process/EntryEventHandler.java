@@ -1,9 +1,9 @@
 package org.sollunae.ledger.axon.entry.process;
 
-import org.axonframework.commandhandling.gateway.CommandGateway;
 import org.axonframework.eventhandling.EventHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.sollunae.ledger.axon.LedgerCommandGateway;
 import org.sollunae.ledger.axon.account.persistence.AccountDocument;
 import org.sollunae.ledger.axon.entry.aggregate.Entry;
 import org.sollunae.ledger.axon.entry.command.EntryUpdateDataCommand;
@@ -27,10 +27,10 @@ public class EntryEventHandler {
     private static final String BIJ = "Bij";
     private static final String CREDIT = "Credit";
 
-    private final CommandGateway commandGateway;
+    private final LedgerCommandGateway commandGateway;
     private final MongoTemplate mongoTemplate;
 
-    public EntryEventHandler(CommandGateway commandGateway, MongoTemplate mongoTemplate) {
+    public EntryEventHandler(LedgerCommandGateway commandGateway, MongoTemplate mongoTemplate) {
         this.commandGateway = commandGateway;
         this.mongoTemplate = mongoTemplate;
     }

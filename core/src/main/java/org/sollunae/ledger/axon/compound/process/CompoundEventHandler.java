@@ -1,9 +1,9 @@
 package org.sollunae.ledger.axon.compound.process;
 
-import org.axonframework.commandhandling.gateway.CommandGateway;
 import org.axonframework.eventhandling.EventHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.sollunae.ledger.axon.LedgerCommandGateway;
 import org.sollunae.ledger.axon.compound.command.CompoundRebalanceCommand;
 import org.sollunae.ledger.axon.compound.event.*;
 import org.sollunae.ledger.axon.compound.persistence.CompoundDocument;
@@ -23,23 +23,31 @@ import java.lang.invoke.MethodHandles;
 public class CompoundEventHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-    @EventHandler
-    public void on(CompoundCreatedEvent compoundCreatedEvent) {
-        LOGGER.info("Created compound: {}: {}", compoundCreatedEvent.getId());
+    private final LedgerCommandGateway commandGateway;
+    private final MongoTemplate mongoTemplate;
+
+    public CompoundEventHandler(LedgerCommandGateway commandGateway, MongoTemplate mongoTemplate) {
+        this.commandGateway = commandGateway;
+        this.mongoTemplate = mongoTemplate;
     }
 
     @EventHandler
-    public void on(CompoundEntryAddedEvent event, MongoTemplate mongoTemplate, CommandGateway commandGateway) {
+    public void on(CompoundCreatedEvent compoundCreatedEvent) {
+        LOGGER.debug("Created compound: {}: {}", compoundCreatedEvent.getId());
+    }
+
+    @EventHandler
+    public void on(CompoundEntryAddedEvent event) {
         String compoundId = event.getCompoundId();
         CompoundMemberData member = event.getMember();
         LOGGER.debug("On compound entry added event: member: {}", member.toString().replaceAll("[ \t\n]+", " "));
         Update update = Update.update("memberMap." + member.getId(), member);
-        upsert(update, compoundId, mongoTemplate);
+        upsert(update, compoundId);
         commandGateway.send(CompoundRebalanceCommand.builder().id(compoundId).addedEntryId(member.getId()).build());
     }
 
     @EventHandler
-    public void on(CompoundEntryUpdatedEvent event, CommandGateway commandGateway) {
+    public void on(CompoundEntryUpdatedEvent event) {
         String entryId = event.getEntryId();
         String intendedJar = event.getIntendedJar();
         Boolean status = event.getBalanceMatchesIntention();
@@ -52,7 +60,7 @@ public class CompoundEventHandler {
     }
 
     @EventHandler
-    public void on(CompoundEntryRemovedEvent event, MongoTemplate mongoTemplate, CommandGateway commandGateway) {
+    public void on(CompoundEntryRemovedEvent event) {
         String compoundId = event.getCompoundId();
         String entryId = event.getEntryId();
         LOGGER.info("On compound entry removed event: member: {}", entryId);
@@ -64,18 +72,18 @@ public class CompoundEventHandler {
     }
 
     @EventHandler
-    public void on(CompoundKeyUpdatedEvent event, MongoTemplate mongoTemplate) {
+    public void on(CompoundKeyUpdatedEvent event) {
         String compoundId = event.getCompoundId();
         Update update = Update.update("key", event.getKey());
-        upsert(update, compoundId, mongoTemplate);
+        upsert(update, compoundId);
     }
 
     @EventHandler
-    public void on(CompoundIntendedJarUpdatedEvent event, MongoTemplate mongoTemplate, CommandGateway commandGateway) {
+    public void on(CompoundIntendedJarUpdatedEvent event) {
         String compoundId = event.getCompoundId();
         Update update = Update.update("intendedJar", event.getIntendedJar())
             .set("balanceMatchesIntention", event.isBalanceMatchesIntention());
-        upsert(update, compoundId, mongoTemplate);
+        upsert(update, compoundId);
         LOGGER.trace("Send EntryUpdateJarCommands to: {}", StringUtil.asString(event.getEntryIds()));
         for (String entryId : event.getEntryIds()) {
             LOGGER.trace("Send EntryUpdateJarCommand to: {}", entryId);
@@ -89,10 +97,10 @@ public class CompoundEventHandler {
     }
 
     @EventHandler
-    public void on(CompoundStatusUpdatedEvent event, MongoTemplate mongoTemplate, CommandGateway commandGateway) {
+    public void on(CompoundStatusUpdatedEvent event) {
         String compoundId = event.getCompoundId();
         Update update = Update.update("balanceMatchesIntention", event.getBalanceMatchesIntention());
-        upsert(update, compoundId, mongoTemplate);
+        upsert(update, compoundId);
         LOGGER.trace("Send EntryUpdateStatusCommands to: {}", StringUtil.asString(event.getEntryIds()));
         for (String entryId : event.getEntryIds()) {
             LOGGER.trace("Send EntryUpdateStatusCommand to: {}", entryId);
@@ -106,14 +114,14 @@ public class CompoundEventHandler {
     }
 
     @EventHandler
-    public void on(CompoundBalanceUpdatedEvent event, MongoTemplate mongoTemplate) {
+    public void on(CompoundBalanceUpdatedEvent event) {
         String compoundId = event.getCompoundId();
         Update update = Update.update("balance", event.getBalance())
             .set("balanceMatchesIntention", event.isBalanceMatchesIntention());
-        upsert(update, compoundId, mongoTemplate);
+        upsert(update, compoundId);
     }
 
-    private void upsert(Update update, String compoundId, MongoTemplate mongoTemplate) {
+    private void upsert(Update update, String compoundId) {
         Query query = Query.query(Criteria.where("id").is(compoundId));
         update.set("_id", compoundId).set("_class", CompoundDocument.class.getCanonicalName());
         mongoTemplate.upsert(query, update, CompoundDocument.class);

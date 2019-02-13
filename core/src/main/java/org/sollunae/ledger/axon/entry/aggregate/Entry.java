@@ -3,12 +3,13 @@ package org.sollunae.ledger.axon.entry.aggregate;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.axonframework.commandhandling.CommandHandler;
-import org.axonframework.commandhandling.gateway.CommandGateway;
 import org.axonframework.eventsourcing.EventSourcingHandler;
 import org.axonframework.modelling.command.AggregateIdentifier;
 import org.axonframework.spring.stereotype.Aggregate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.sollunae.ledger.axon.LedgerCommand;
+import org.sollunae.ledger.axon.LedgerCommandGateway;
 import org.sollunae.ledger.axon.compound.command.CompoundAddEntryCommand;
 import org.sollunae.ledger.axon.compound.command.CompoundRemoveEntryCommand;
 import org.sollunae.ledger.axon.entry.command.*;
@@ -54,19 +55,19 @@ public class Entry {
     }
 
     @CommandHandler
-    public void handle(EntryAddToCompoundCommand entryAddToCompoundCommand, CommandGateway commandGateway) {
+    public void handle(EntryAddToCompoundCommand entryAddToCompoundCommand, LedgerCommandGateway commandGateway) {
         String compoundId = entryAddToCompoundCommand.getCompoundId();
         if (Objects.equals(compoundId, this.compoundId)) {
             return;
         }
-        LOGGER.info("On handle entry add to compound command: data: {}", data.toString().replaceAll("[ \t\n]+", " "));
+        LOGGER.trace("On handle entry add to compound command: data: {}", data.toString().replaceAll("[ \t\n]+", " "));
         CompoundMemberData member = new CompoundMemberData();
         member.setId(id);
         member.setKey(data.getKey());
         member.setAmountCents(data.getAmountCents());
         member.setJar(data.getJar());
         member.setContraJar(data.getContraJar());
-        Object compoundAddEntryCommand = CompoundAddEntryCommand.builder()
+        LedgerCommand compoundAddEntryCommand = CompoundAddEntryCommand.builder()
             .id(compoundId)
             .member(member)
             .build();
@@ -84,11 +85,11 @@ public class Entry {
     }
 
     @CommandHandler
-    public void handle(EntryRemoveFromCompoundCommand entryRemoveFromCompoundCommand, CommandGateway commandGateway) {
+    public void handle(EntryRemoveFromCompoundCommand entryRemoveFromCompoundCommand, LedgerCommandGateway commandGateway) {
         if (compoundId == null) {
             return;
         }
-        Object compoundRemoveEntryCommand = CompoundRemoveEntryCommand.builder()
+        LedgerCommand compoundRemoveEntryCommand = CompoundRemoveEntryCommand.builder()
             .id(compoundId)
             .entryId(id)
             .build();

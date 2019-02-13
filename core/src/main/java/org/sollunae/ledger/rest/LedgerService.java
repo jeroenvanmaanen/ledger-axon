@@ -4,8 +4,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVRecord;
-import org.axonframework.commandhandling.GenericCommandMessage;
-import org.axonframework.commandhandling.gateway.CommandGateway;
 import org.axonframework.queryhandling.QueryGateway;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -52,8 +50,7 @@ import static org.sollunae.ledger.util.StringUtil.isNotEmpty;
 public class LedgerService implements LedgerApiDelegate {
     private static final Logger LOGGER = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-    private final CommandGateway commandGateway;
-    private final LedgerCommandGateway ledgerCommandGateway;
+    private final LedgerCommandGateway commandGateway;
     private final QueryGateway queryGateway;
     private final LedgerEntryRepository entryRepository;
     private final LedgerCompoundRepository compoundRepository;
@@ -61,9 +58,8 @@ public class LedgerService implements LedgerApiDelegate {
     private final Map<String, BiConsumer<EntryData,String>> stringSetterMap = new HashMap<>();
     private final Map<String, BiConsumer<EntryData,LocalDate>> dateSetterMap = new HashMap<>();
 
-    public LedgerService(CommandGateway commandGateway, LedgerCommandGateway ledgerCommandGateway, QueryGateway queryGateway, LedgerEntryRepository entryRepository, LedgerCompoundRepository compoundRepository) {
-        this.commandGateway = commandGateway;
-        this.ledgerCommandGateway = ledgerCommandGateway;
+    public LedgerService(LedgerCommandGateway ledgerCommandGateway, QueryGateway queryGateway, LedgerEntryRepository entryRepository, LedgerCompoundRepository compoundRepository) {
+        this.commandGateway = ledgerCommandGateway;
         this.queryGateway = queryGateway;
         this.entryRepository = entryRepository;
         this.compoundRepository = compoundRepository;
@@ -120,7 +116,7 @@ public class LedgerService implements LedgerApiDelegate {
             .id(id)
             .data(data)
             .build();
-        String createdId = ledgerCommandGateway.sendAndWait(createCommand);
+        String createdId = commandGateway.sendAndWait(createCommand);
         LOGGER.debug("Created ID: {}", createdId);
         if (StringUtils.isEmpty(createdId)) {
             return ResponseEntity.status(HttpStatus.CONFLICT).body(null);
@@ -136,7 +132,7 @@ public class LedgerService implements LedgerApiDelegate {
             .id(id)
             .entry(entry)
             .build();
-        String createdId = ledgerCommandGateway.sendAndWait(createCommand);
+        String createdId = commandGateway.sendAndWait(createCommand);
         LOGGER.debug("Created ID: {}", createdId);
         if (StringUtils.isEmpty(createdId)) {
             return ResponseEntity.status(HttpStatus.CONFLICT).body(null);
@@ -173,10 +169,10 @@ public class LedgerService implements LedgerApiDelegate {
 
     private String createCompoundTransaction() {
         String id = UUID.randomUUID().toString();
-        Object createCommand = CreateCompoundCommand.builder()
+        LedgerCommand createCommand = CreateCompoundCommand.builder()
             .id(id)
             .build();
-        commandGateway.sendAndWait(GenericCommandMessage.asCommandMessage(createCommand));
+        commandGateway.sendAndWait(createCommand);
         return id;
     }
 
@@ -197,20 +193,20 @@ public class LedgerService implements LedgerApiDelegate {
 
     @Override
     public ResponseEntity<Void> addEntryToCompound(String id, String compoundId) {
-        EntryAddToCompoundCommand entryAddToCompoundCommand = EntryAddToCompoundCommand.builder()
+        LedgerCommand entryAddToCompoundCommand = EntryAddToCompoundCommand.builder()
             .id(id)
             .compoundId(compoundId)
             .build();
-        commandGateway.sendAndWait(GenericCommandMessage.asCommandMessage(entryAddToCompoundCommand));
+        commandGateway.sendAndWait(entryAddToCompoundCommand);
         return ResponseEntity.ok(null);
     }
 
     @Override
     public ResponseEntity<Void> removeEntryFromCompound(String id) {
-        EntryRemoveFromCompoundCommand entryRemoveFromCompoundCommand = EntryRemoveFromCompoundCommand.builder()
+        LedgerCommand entryRemoveFromCompoundCommand = EntryRemoveFromCompoundCommand.builder()
             .id(id)
             .build();
-        commandGateway.sendAndWait(GenericCommandMessage.asCommandMessage(entryRemoveFromCompoundCommand));
+        commandGateway.sendAndWait(entryRemoveFromCompoundCommand);
         return ResponseEntity.ok(null);
     }
 
@@ -365,7 +361,7 @@ public class LedgerService implements LedgerApiDelegate {
                             .id(account.getAccount())
                             .data(account)
                             .build();
-                        String createdId = ledgerCommandGateway.sendAndWait(createAccountCommand);
+                        String createdId = commandGateway.sendAndWait(createAccountCommand);
                         LOGGER.debug("Created ID: {}", createdId);
                         if (StringUtils.isEmpty(createdId)) {
                             failed++;
@@ -413,7 +409,7 @@ public class LedgerService implements LedgerApiDelegate {
         int sequence = 0;
         for (CSVRecord row : rows) {
             try {
-                LOGGER.info("Row: {}", asStream(row).collect(Collectors.joining("|")));
+                LOGGER.trace("Row: {}", asStream(row).collect(Collectors.joining("|")));
                 EntryData entryData = mapRow(row);
                 String id = UUID.randomUUID().toString();
                 if (Objects.equals(entryData.getDate(), lastDate)) {

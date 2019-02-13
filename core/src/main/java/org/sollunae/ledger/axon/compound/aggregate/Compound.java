@@ -39,7 +39,7 @@ public class Compound {
     @CommandHandler
     public Compound(CreateCompoundCommand createCompoundCommand) {
         id = createCompoundCommand.getId();
-        LOGGER.info("Create compound: {}", id);
+        LOGGER.debug("Create compound: {}", id);
         apply(CompoundCreatedEvent.builder().id(id).build());
     }
 

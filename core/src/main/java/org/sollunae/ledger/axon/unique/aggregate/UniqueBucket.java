@@ -42,6 +42,7 @@ public class UniqueBucket {
     @CommandHandler
     public UniqueBucket(CreateUniqueBucketCommand command) {
         id = command.getId();
+        LOGGER.debug("Create unique bucket with ID: {}", id);
         apply(UniqueBucketAddedEvent.builder()
             .id(id)
             .maxKeys(command.getMaxKeys())
