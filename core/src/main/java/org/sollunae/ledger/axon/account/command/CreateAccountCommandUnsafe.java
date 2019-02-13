@@ -6,9 +6,9 @@ import org.axonframework.modelling.command.TargetAggregateIdentifier;
 import org.sollunae.ledger.axon.LedgerCommand;
 import org.sollunae.ledger.model.AccountData;
 
-@Value
+@Value()
 @Builder
-public class CreateAccountCommand implements LedgerCommand {
+public class CreateAccountCommandUnsafe implements LedgerCommand {
 
     @TargetAggregateIdentifier
     private String id;

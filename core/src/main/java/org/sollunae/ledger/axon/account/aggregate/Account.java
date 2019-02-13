@@ -8,7 +8,7 @@ import org.axonframework.modelling.command.AggregateIdentifier;
 import org.axonframework.spring.stereotype.Aggregate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.sollunae.ledger.axon.account.command.CreateAccountCommand;
+import org.sollunae.ledger.axon.account.command.CreateAccountCommandUnsafe;
 import org.sollunae.ledger.axon.account.event.AccountCreatedEvent;
 import org.sollunae.ledger.axon.unique.process.UniqueKeyService;
 import org.sollunae.ledger.model.AccountData;
@@ -30,24 +30,20 @@ public class Account {
     private AccountData data;
 
     @CommandHandler
-    public Account(CreateAccountCommand createCommand, UniqueKeyService uniqueKeyService) {
+    public Account(CreateAccountCommandUnsafe createCommand, UniqueKeyService uniqueKeyService) {
         AccountData data = createCommand.getData();
         id = data.getAccount();
-        String key = data.getKey();
-        LOGGER.info("Create account: {}: unique key service: {}", id, uniqueKeyService);
         if (StringUtils.isEmpty(data.getLabel())) {
-            data.setLabel(key);
+            data.setLabel(data.getKey());
         }
-        try {
-            uniqueKeyService.assertUnique(getClass().toString(), key);
-        } catch (RuntimeException exception) {
-            throw new IllegalStateException("Entry key already exists: '" + key + "'", exception);
-        }
+        this.data = data;
+        LOGGER.debug("Created account: {}", id);
         apply(AccountCreatedEvent.builder().id(id).data(data).build());
     }
 
     @EventSourcingHandler
     public void on(AccountCreatedEvent accountCreatedEvent) {
+        id = accountCreatedEvent.getId();
         data = accountCreatedEvent.getData();
     }
 }

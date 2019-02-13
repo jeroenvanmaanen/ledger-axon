@@ -1,13 +1,14 @@
 package org.sollunae.ledger.axon.unique.process;
 
-import org.axonframework.commandhandling.gateway.CommandGateway;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.sollunae.ledger.axon.LedgerCommandGateway;
 import org.sollunae.ledger.axon.unique.command.AddUniqueKeyCommand;
 import org.sollunae.ledger.axon.unique.command.CreateUniqueBucketCommand;
 import org.sollunae.ledger.axon.unique.command.UniqueBucketLogStatisticsCommand;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 
 import java.lang.invoke.MethodHandles;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -16,12 +17,12 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class UniqueKeyService {
     private static final Logger LOGGER = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
     private static final String UNIQUE_ROOT_ID = "unique-root";
-    private final CommandGateway commandGateway;
+    private final LedgerCommandGateway commandGateway;
     private final HashingMethod hashingMethod;
     private final AtomicBoolean isInitialized = new AtomicBoolean(false);
 
     @Autowired
-    public UniqueKeyService(CommandGateway commandGateway, HashingMethod hashingMethod) {
+    public UniqueKeyService(LedgerCommandGateway commandGateway, HashingMethod hashingMethod) {
         this.commandGateway = commandGateway;
         this.hashingMethod = hashingMethod;
     }
@@ -31,12 +32,17 @@ public class UniqueKeyService {
             initialize();
         }
         String hash = hashingMethod.createHash(domain, key);
-        commandGateway.sendAndWait(AddUniqueKeyCommand.builder()
+        LOGGER.trace("Assert unique: {}: {}: {}", domain, key, hash);
+        String result = commandGateway.sendAndWait(AddUniqueKeyCommand.builder()
             .id(UNIQUE_ROOT_ID)
             .domain(domain)
             .key(key)
             .hash(hash)
             .build());
+        if (StringUtils.isEmpty(result)) {
+            LOGGER.debug("Key already exists: {}: {}", domain, key);
+            throw new IllegalStateException("Key already exists: " + domain + ": " + key);
+        }
     }
 
     private void initialize() {

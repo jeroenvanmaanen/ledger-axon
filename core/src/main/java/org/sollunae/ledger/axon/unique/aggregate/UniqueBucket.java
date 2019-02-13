@@ -3,12 +3,12 @@ package org.sollunae.ledger.axon.unique.aggregate;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.axonframework.commandhandling.CommandHandler;
-import org.axonframework.commandhandling.gateway.CommandGateway;
 import org.axonframework.eventsourcing.EventSourcingHandler;
 import org.axonframework.modelling.command.AggregateIdentifier;
 import org.axonframework.spring.stereotype.Aggregate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.sollunae.ledger.axon.LedgerCommandGateway;
 import org.sollunae.ledger.axon.unique.command.AddUniqueKeyCommand;
 import org.sollunae.ledger.axon.unique.command.CreateUniqueBucketCommand;
 import org.sollunae.ledger.axon.unique.command.UniqueBucketLogStatisticsCommand;
@@ -50,12 +50,13 @@ public class UniqueBucket {
     }
 
     @CommandHandler
-    void handle(AddUniqueKeyCommand command, CommandGateway commandGateway) {
+    public String handle(AddUniqueKeyCommand command, LedgerCommandGateway commandGateway) {
         Object domain = command.getDomain();
         String key = command.getKey();
         Pair<Object,String> pair = Pair.of(domain, key);
         if (existingKeys.contains(pair)) {
-            throw new IllegalStateException("Key already exists: " + key);
+            LOGGER.debug("Key already exists: {}: {}", domain, key);
+            return null;
         } else if (LOGGER.isTraceEnabled()) {
             existingKeys.forEach(p -> traceCompare(pair, p));
         }
@@ -70,11 +71,12 @@ public class UniqueBucket {
                 .key(key)
                 .hash(hash)
                 .build());
+            return key;
         } else {
             String childKey = hash.substring(0, childKeyPrefixLength);
             String remainderKey = hash.substring(childKeyPrefixLength);
             String childId = getChildId(childKey, commandGateway);
-            commandGateway.sendAndWait(AddUniqueKeyCommand.builder()
+            return commandGateway.sendAndWait(AddUniqueKeyCommand.builder()
                 .id(childId)
                 .domain(domain)
                 .key(key)
@@ -97,7 +99,7 @@ public class UniqueBucket {
         LOGGER.trace("[{} ]", info);
     }
 
-    private String getChildId(String childKey, CommandGateway commandGateway) {
+    private String getChildId(String childKey, LedgerCommandGateway commandGateway) {
         if (children.containsKey(childKey)) {
             return children.get(childKey);
         } else {

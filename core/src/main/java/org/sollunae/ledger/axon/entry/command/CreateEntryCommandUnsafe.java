@@ -1,17 +1,17 @@
-package org.sollunae.ledger.axon.account.command;
+package org.sollunae.ledger.axon.entry.command;
 
 import lombok.Builder;
 import lombok.Value;
 import org.axonframework.modelling.command.TargetAggregateIdentifier;
 import org.sollunae.ledger.axon.LedgerCommand;
-import org.sollunae.ledger.model.AccountData;
+import org.sollunae.ledger.model.EntryData;
 
 @Value
 @Builder
-public class CreateAccountCommand implements LedgerCommand {
+public class CreateEntryCommandUnsafe implements LedgerCommand {
 
     @TargetAggregateIdentifier
     private String id;
 
-    private AccountData data;
+    private EntryData entry;
 }

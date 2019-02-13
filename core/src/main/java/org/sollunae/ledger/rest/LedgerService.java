@@ -9,6 +9,8 @@ import org.axonframework.commandhandling.gateway.CommandGateway;
 import org.axonframework.queryhandling.QueryGateway;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.sollunae.ledger.axon.LedgerCommand;
+import org.sollunae.ledger.axon.LedgerCommandGateway;
 import org.sollunae.ledger.axon.account.command.CreateAccountCommand;
 import org.sollunae.ledger.axon.account.query.AccountAllQuery;
 import org.sollunae.ledger.axon.compound.command.CompoundUpdateIntendedJarCommand;
@@ -16,12 +18,12 @@ import org.sollunae.ledger.axon.compound.command.CreateCompoundCommand;
 import org.sollunae.ledger.axon.compound.persistence.CompoundDocument;
 import org.sollunae.ledger.axon.compound.persistence.LedgerCompoundRepository;
 import org.sollunae.ledger.axon.compound.query.CompoundByIdQuery;
-import org.sollunae.ledger.axon.entry.query.EntriesWithDatePrefixQuery;
 import org.sollunae.ledger.axon.entry.command.CreateEntryCommand;
 import org.sollunae.ledger.axon.entry.command.EntryAddToCompoundCommand;
 import org.sollunae.ledger.axon.entry.command.EntryRemoveFromCompoundCommand;
 import org.sollunae.ledger.axon.entry.persistence.EntryDocument;
 import org.sollunae.ledger.axon.entry.persistence.LedgerEntryRepository;
+import org.sollunae.ledger.axon.entry.query.EntriesWithDatePrefixQuery;
 import org.sollunae.ledger.axon.entry.query.EntryByIdQuery;
 import org.sollunae.ledger.model.*;
 import org.springframework.http.HttpStatus;
@@ -51,6 +53,7 @@ public class LedgerService implements LedgerApiDelegate {
     private static final Logger LOGGER = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
     private final CommandGateway commandGateway;
+    private final LedgerCommandGateway ledgerCommandGateway;
     private final QueryGateway queryGateway;
     private final LedgerEntryRepository entryRepository;
     private final LedgerCompoundRepository compoundRepository;
@@ -58,8 +61,9 @@ public class LedgerService implements LedgerApiDelegate {
     private final Map<String, BiConsumer<EntryData,String>> stringSetterMap = new HashMap<>();
     private final Map<String, BiConsumer<EntryData,LocalDate>> dateSetterMap = new HashMap<>();
 
-    public LedgerService(CommandGateway commandGateway, QueryGateway queryGateway, LedgerEntryRepository entryRepository, LedgerCompoundRepository compoundRepository) {
+    public LedgerService(CommandGateway commandGateway, LedgerCommandGateway ledgerCommandGateway, QueryGateway queryGateway, LedgerEntryRepository entryRepository, LedgerCompoundRepository compoundRepository) {
         this.commandGateway = commandGateway;
+        this.ledgerCommandGateway = ledgerCommandGateway;
         this.queryGateway = queryGateway;
         this.entryRepository = entryRepository;
         this.compoundRepository = compoundRepository;
@@ -112,32 +116,32 @@ public class LedgerService implements LedgerApiDelegate {
         if (!Objects.equals(id, data.getAccount())) {
             throw new HttpServerErrorException(HttpStatus.BAD_REQUEST);
         }
-        Object createCommand = CreateAccountCommand.builder()
+        LedgerCommand createCommand = CreateAccountCommand.builder()
             .id(id)
             .data(data)
             .build();
-        try {
-            commandGateway.sendAndWait(GenericCommandMessage.asCommandMessage(createCommand));
-            return ResponseEntity.status(HttpStatus.CREATED).body(id);
-        } catch (RuntimeException exception) {
-            LOGGER.error("Exception during command execution: {}", exception.getCause(), exception);
+        String createdId = ledgerCommandGateway.sendAndWait(createCommand);
+        LOGGER.debug("Created ID: {}", createdId);
+        if (StringUtils.isEmpty(createdId)) {
             return ResponseEntity.status(HttpStatus.CONFLICT).body(null);
+        } else {
+            return ResponseEntity.status(HttpStatus.CREATED).body(id);
         }
     }
 
     @Override
     public ResponseEntity<String> createEntry(EntryData entry) {
         String id = UUID.randomUUID().toString();
-        Object createCommand = CreateEntryCommand.builder()
+        LedgerCommand createCommand = CreateEntryCommand.builder()
             .id(id)
             .entry(entry)
             .build();
-        try {
-            commandGateway.sendAndWait(GenericCommandMessage.asCommandMessage(createCommand));
-            return ResponseEntity.status(HttpStatus.CREATED).body(id);
-        } catch (RuntimeException exception) {
-            LOGGER.error("Exception during command execution: {}", exception.getCause(), exception);
+        String createdId = ledgerCommandGateway.sendAndWait(createCommand);
+        LOGGER.debug("Created ID: {}", createdId);
+        if (StringUtils.isEmpty(createdId)) {
             return ResponseEntity.status(HttpStatus.CONFLICT).body(null);
+        } else {
+            return ResponseEntity.status(HttpStatus.CREATED).body(id);
         }
     }
 
@@ -357,14 +361,19 @@ public class LedgerService implements LedgerApiDelegate {
                         AccountData account = mapper.readValue(builder.toString(), AccountData.class);
                         builder = new StringBuilder();
                         LOGGER.info("Import account: {}: {}", account.getAccount(), account.getKey());
-                        Object createAccountCommand = CreateAccountCommand.builder()
+                        LedgerCommand createAccountCommand = CreateAccountCommand.builder()
                             .id(account.getAccount())
                             .data(account)
                             .build();
-                        commandGateway.sendAndWait(createAccountCommand);
-                        imported++;
-                    } catch (RuntimeException exception) {
-                        LOGGER.warn("Exception while importing account: {}", exception.toString());
+                        String createdId = ledgerCommandGateway.sendAndWait(createAccountCommand);
+                        LOGGER.debug("Created ID: {}", createdId);
+                        if (StringUtils.isEmpty(createdId)) {
+                            failed++;
+                        } else {
+                            imported++;
+                        }
+                    } catch (Exception exception) {
+                        LOGGER.warn("Exception while importing account: {}: {}", exception.toString(), String.valueOf(exception.getCause()));
                         failed++;
                     }
                 } else {

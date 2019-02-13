@@ -13,17 +13,12 @@ import org.sollunae.ledger.axon.compound.command.CompoundAddEntryCommand;
 import org.sollunae.ledger.axon.compound.command.CompoundRemoveEntryCommand;
 import org.sollunae.ledger.axon.entry.command.*;
 import org.sollunae.ledger.axon.entry.event.*;
-import org.sollunae.ledger.axon.unique.process.UniqueKeyService;
 import org.sollunae.ledger.model.CompoundMemberData;
 import org.sollunae.ledger.model.EntryData;
 
 import java.lang.invoke.MethodHandles;
-import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Objects;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
 import static org.axonframework.modelling.command.AggregateLifecycle.apply;
 
@@ -42,17 +37,13 @@ public class Entry {
     private Boolean balanceMatchesIntention;
 
     @CommandHandler
-    public Entry(CreateEntryCommand createCommand, UniqueKeyService uniqueKeyService) {
+    public Entry(CreateEntryCommandUnsafe createCommand) {
         id = createCommand.getId();
-        LOGGER.trace("Create entry: {}: helper: {}", id, uniqueKeyService);
+        LOGGER.trace("Create entry: {}: helper: {}", id);
         EntryData data = createCommand.getEntry();
-        String key = createUniqueKey(data);
-        try {
-            uniqueKeyService.assertUnique(getClass().toString(), key);
-        } catch (RuntimeException exception) {
-            throw new IllegalStateException("Entry key already exists: '" + key + "'", exception);
-        }
         data.setId(id);
+        this.data = data;
+        LOGGER.debug("Created entry: {}", data.getKey());
         apply(EntryCreatedEvent.builder().id(id).data(data).build());
     }
 
@@ -143,23 +134,6 @@ public class Entry {
     @EventSourcingHandler
     public void on(EntryDataUpdatedEvent event) {
         data = event.getData();
-    }
-
-    private String createUniqueKey(EntryData entry) {
-        List<String> parts = new ArrayList<>();
-        parts.add(DateTimeFormatter.ISO_LOCAL_DATE.format(entry.getDate()));
-        parts.add(entry.getAccount());
-        parts.add(entry.getAmount());
-        parts.add(entry.getDebetCredit());
-        parts.add(entry.getCode());
-        parts.add(entry.getKind());
-        parts.add(entry.getContraAccount());
-        parts.add(entry.getDescription());
-        parts.add(entry.getRemarks());
-        return parts.stream()
-            .map(part -> part.replace("%", "%25"))
-            .map(part -> part.replace("|", "%7C"))
-            .collect(Collectors.joining("|"));
     }
 
     @CommandHandler
