@@ -2,15 +2,15 @@ package org.sollunae.ledger.rest;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVRecord;
 import org.axonframework.queryhandling.QueryGateway;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.sollunae.ledger.axon.LedgerCommand;
 import org.sollunae.ledger.axon.LedgerCommandGateway;
 import org.sollunae.ledger.axon.account.command.CreateAccountCommand;
 import org.sollunae.ledger.axon.account.query.AccountAllQuery;
+import org.sollunae.ledger.axon.compound.command.CompoundRemoveEntryCommand;
 import org.sollunae.ledger.axon.compound.command.CompoundUpdateIntendedJarCommand;
 import org.sollunae.ledger.axon.compound.command.CreateCompoundCommand;
 import org.sollunae.ledger.axon.compound.persistence.CompoundDocument;
@@ -32,7 +32,6 @@ import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.*;
-import java.lang.invoke.MethodHandles;
 import java.time.DateTimeException;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -46,10 +45,9 @@ import java.util.stream.Stream;
 import static org.sollunae.ledger.util.StreamUtil.asStream;
 import static org.sollunae.ledger.util.StringUtil.isNotEmpty;
 
+@Slf4j
 @Component
 public class LedgerService implements LedgerApiDelegate {
-    private static final Logger LOGGER = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-
     private final LedgerCommandGateway commandGateway;
     private final QueryGateway queryGateway;
     private final LedgerEntryRepository entryRepository;
@@ -88,7 +86,7 @@ public class LedgerService implements LedgerApiDelegate {
             ArrayOfAccountData accounts = queryGateway.query(new AccountAllQuery(), ArrayOfAccountData.class).get();
             return ResponseEntity.ok(accounts);
         } catch (InterruptedException | ExecutionException e) {
-            LOGGER.error("Error getting Accounts", e);
+            log.error("Error getting Accounts", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
         }
     }
@@ -102,7 +100,7 @@ public class LedgerService implements LedgerApiDelegate {
             ArrayOfEntryData accounts = queryGateway.query(query, ArrayOfEntryData.class).get();
             return ResponseEntity.ok(accounts);
         } catch (InterruptedException | ExecutionException e) {
-            LOGGER.error("Error getting entries with date prefix: {}", datePrefix, e);
+            log.error("Error getting entries with date prefix: {}", datePrefix, e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
         }
     }
@@ -117,7 +115,7 @@ public class LedgerService implements LedgerApiDelegate {
             .data(data)
             .build();
         String createdId = commandGateway.sendAndWait(createCommand);
-        LOGGER.debug("Created ID: {}", createdId);
+        log.debug("Created ID: {}", createdId);
         if (StringUtils.isEmpty(createdId)) {
             return ResponseEntity.status(HttpStatus.CONFLICT).body(null);
         } else {
@@ -133,7 +131,7 @@ public class LedgerService implements LedgerApiDelegate {
             .entry(entry)
             .build();
         String createdId = commandGateway.sendAndWait(createCommand);
-        LOGGER.debug("Created ID: {}", createdId);
+        log.debug("Created ID: {}", createdId);
         if (StringUtils.isEmpty(createdId)) {
             return ResponseEntity.status(HttpStatus.CONFLICT).body(null);
         } else {
@@ -151,7 +149,7 @@ public class LedgerService implements LedgerApiDelegate {
                 return ResponseEntity.ok(result);
             }
         } catch (InterruptedException | ExecutionException e) {
-            LOGGER.error("Error getting Entry", e);
+            log.error("Error getting Entry", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
         }
     }
@@ -162,7 +160,7 @@ public class LedgerService implements LedgerApiDelegate {
             String id = createCompoundTransaction();
             return ResponseEntity.status(HttpStatus.CREATED).body(id);
         } catch (RuntimeException exception) {
-            LOGGER.error("Exception during command execution: {}", exception.getCause(), exception);
+            log.error("Exception during command execution: {}", exception.getCause(), exception);
             return ResponseEntity.status(HttpStatus.CONFLICT).body(null);
         }
     }
@@ -186,7 +184,7 @@ public class LedgerService implements LedgerApiDelegate {
                 return ResponseEntity.ok(result);
             }
         } catch (InterruptedException | ExecutionException e) {
-            LOGGER.error("Error getting Compound", e);
+            log.error("Error getting Compound", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
         }
     }
@@ -222,17 +220,17 @@ public class LedgerService implements LedgerApiDelegate {
                 .orElse(null);
         }
         if (entry == null) {
-            LOGGER.warn("Not found: {}: {}", member.getId(), member.getKey());
+            log.warn("Not found: {}: {}", member.getId(), member.getKey());
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
         } else {
             if (member.getAmountCents() != null && !Objects.equals(member.getAmountCents(), entry.getData().getAmountCents())) {
-                LOGGER.warn("Amount mismatch: {}: {}: {}: {}", member.getId(), member.getKey(), member.getAmountCents(), entry.getData().getAmountCents());
+                log.warn("Amount mismatch: {}: {}: {}: {}", member.getId(), member.getKey(), member.getAmountCents(), entry.getData().getAmountCents());
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
             } else if (isNotEmpty(member.getJar()) && !Objects.equals(member.getJar(), entry.getData().getJar())) {
-                LOGGER.warn("JAR mismatch: {}: {}: {}: {}", member.getId(), member.getKey(), member.getJar(), entry.getData().getJar());
+                log.warn("JAR mismatch: {}: {}: {}: {}", member.getId(), member.getKey(), member.getJar(), entry.getData().getJar());
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
             } else if (isNotEmpty(member.getContraJar()) && !Objects.equals(member.getContraJar(), entry.getData().getContraJar())) {
-                LOGGER.warn("Contra-JAR mismatch: {}: {}: {}: {}", member.getId(), member.getKey(), member.getContraJar(), entry.getData().getContraJar());
+                log.warn("Contra-JAR mismatch: {}: {}: {}: {}", member.getId(), member.getKey(), member.getContraJar(), entry.getData().getContraJar());
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
             }
             addEntryToCompound(entry.getId(), compoundId);
@@ -252,12 +250,12 @@ public class LedgerService implements LedgerApiDelegate {
 
     @Override
     public ResponseEntity<Void> uploadCompoundTransactions(MultipartFile data) {
-        LOGGER.info("Upload accounts YAML");
+        log.info("Upload accounts YAML");
         try {
             uploadCompoundTransactions(data.getInputStream());
             return ResponseEntity.ok(null);
         } catch (RuntimeException | IOException exception) {
-            LOGGER.error("Exception while uploading accounts YAML", exception);
+            log.error("Exception while uploading accounts YAML", exception);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
         }
     }
@@ -276,23 +274,23 @@ public class LedgerService implements LedgerApiDelegate {
                         builder = new StringBuilder();
                         String compoundId = null;
                         if (isNotEmpty(compound.getId())) {
-                            LOGGER.info("Import compound with Id: {}", compound.getId());
+                            log.info("Import compound with Id: {}", compound.getId());
                             compoundId = compound.getId();
                         } else if (isNotEmpty(compound.getKey())) {
-                            LOGGER.info("Import compound with key: {}", compound.getId());
+                            log.info("Import compound with key: {}", compound.getId());
                             compoundId = getCompoundIdByKey(compound.getKey());
                         }
                         if (StringUtils.isEmpty(compoundId)) {
                             compoundId = createCompoundTransaction();
-                            LOGGER.info("Created compound with Id: {}", compoundId);
+                            log.info("Created compound with Id: {}", compoundId);
                         } else {
-                            LOGGER.info("Update existing compound with Id: {}", compoundId);
+                            log.info("Update existing compound with Id: {}", compoundId);
                         }
                         compound.setId(compoundId);
-                        LOGGER.info("Import compound: {}: {}", compound.getId(), compound.getKey());
+                        log.info("Import compound: {}: {}", compound.getId(), compound.getKey());
                         String intendedJar = compound.getIntendedJar();
                         if (intendedJar != null) {
-                            LOGGER.debug("Set intended jar: {}: {}", compoundId, intendedJar);
+                            log.debug("Set intended jar: {}: {}", compoundId, intendedJar);
                             CompoundUpdateIntendedJarCommand command = CompoundUpdateIntendedJarCommand.builder()
                                 .id(compoundId)
                                 .intendedJar(intendedJar)
@@ -310,7 +308,7 @@ public class LedgerService implements LedgerApiDelegate {
                         }
                         imported++;
                     } catch (RuntimeException exception) {
-                        LOGGER.warn("Exception while importing compound: {}", exception.toString());
+                        log.warn("Exception while importing compound: {}", exception.toString());
                         failed++;
                     }
                 } else {
@@ -320,7 +318,7 @@ public class LedgerService implements LedgerApiDelegate {
                     builder.append(line);
                 }
             }
-            LOGGER.info("Compound transactions imported: {}: failed: {}", imported, failed);
+            log.info("Compound transactions imported: {}: failed: {}", imported, failed);
         }
     }
 
@@ -333,13 +331,57 @@ public class LedgerService implements LedgerApiDelegate {
     }
 
     @Override
+    public ResponseEntity<Void> checkCompoundTransactions() {
+        for (CompoundDocument compoundDocument : compoundRepository.findAll()) {
+            checkCompoundTransaction(compoundDocument);
+        }
+        return null;
+    }
+
+    private void checkCompoundTransaction(CompoundDocument compoundDocument) {
+        String compoundId = compoundDocument.getId();
+        Collection<String> entryIds = getMemberMap(compoundDocument).keySet();
+        Iterable<EntryDocument> entries = entryRepository.findAllById(entryIds);
+        for (EntryDocument entry : entries) {
+            String entryId = entry.getId();
+            String entryCompoundId = entry.getCompoundId();
+            log.debug("Checking entry: {}: {}: {}", entryId, entryCompoundId, compoundId);
+            if (!Objects.equals(entryCompoundId, compoundId)) {
+                if (entryCompoundId == null) {
+                    linkEntry(entry.getId(), compoundId);
+                } else {
+                    unlinkMember(entry.getId(), entryCompoundId, compoundId);
+                }
+            }
+        }
+    }
+
+    private Map<String, CompoundMemberData> getMemberMap(CompoundDocument compoundDocument) {
+        return Optional.ofNullable(compoundDocument)
+            .map(CompoundDocument::getMemberMap)
+            .orElse(Collections.emptyMap());
+    }
+
+    private void unlinkMember(String entryId, String entryCompoundId, String compoundId) {
+        log.debug("Unlink member: {}: {} != {}", entryId, entryCompoundId, compoundId);
+        LedgerCommand command = CompoundRemoveEntryCommand.builder().entryId(entryId).id(compoundId).build();
+        commandGateway.sendAndWait(command);
+    }
+
+    private void linkEntry(String entryId, String compoundId) {
+        log.debug("Link entry: {}: {}", entryId, compoundId);
+        LedgerCommand command = EntryAddToCompoundCommand.builder().id(entryId).compoundId(compoundId).build();
+        commandGateway.sendAndWait(command);
+    }
+
+    @Override
     public ResponseEntity<Void> uploadAccounts(MultipartFile data) {
-        LOGGER.info("Upload accounts YAML");
+        log.info("Upload accounts YAML");
         try {
             uploadAccounts(data.getInputStream());
             return ResponseEntity.ok(null);
         } catch (RuntimeException | IOException exception) {
-            LOGGER.error("Exception while uploading accounts YAML", exception);
+            log.error("Exception while uploading accounts YAML", exception);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
         }
     }
@@ -356,20 +398,20 @@ public class LedgerService implements LedgerApiDelegate {
                     try {
                         AccountData account = mapper.readValue(builder.toString(), AccountData.class);
                         builder = new StringBuilder();
-                        LOGGER.info("Import account: {}: {}", account.getAccount(), account.getKey());
+                        log.info("Import account: {}: {}", account.getAccount(), account.getKey());
                         LedgerCommand createAccountCommand = CreateAccountCommand.builder()
                             .id(account.getAccount())
                             .data(account)
                             .build();
                         String createdId = commandGateway.sendAndWait(createAccountCommand);
-                        LOGGER.debug("Created ID: {}", createdId);
+                        log.debug("Created ID: {}", createdId);
                         if (StringUtils.isEmpty(createdId)) {
                             failed++;
                         } else {
                             imported++;
                         }
                     } catch (Exception exception) {
-                        LOGGER.warn("Exception while importing account: {}: {}", exception.toString(), String.valueOf(exception.getCause()));
+                        log.warn("Exception while importing account: {}: {}", exception.toString(), String.valueOf(exception.getCause()));
                         failed++;
                     }
                 } else {
@@ -379,18 +421,18 @@ public class LedgerService implements LedgerApiDelegate {
                     builder.append(line);
                 }
             }
-            LOGGER.info("Accounts imported: {}: failed: {}", imported, failed);
+            log.info("Accounts imported: {}: failed: {}", imported, failed);
         }
     }
 
     @Override
     public ResponseEntity<Void> uploadEntries(String format, MultipartFile data) {
-        LOGGER.info("Upload entries CSV");
+        log.info("Upload entries CSV");
         try {
             uploadEntries(format, data.getInputStream());
             return ResponseEntity.ok(null);
         } catch (RuntimeException | IOException exception) {
-            LOGGER.error("Exception while uploading entries CSV", exception);
+            log.error("Exception while uploading entries CSV", exception);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
         }
     }
@@ -409,7 +451,7 @@ public class LedgerService implements LedgerApiDelegate {
         int sequence = 0;
         for (CSVRecord row : rows) {
             try {
-                LOGGER.trace("Row: {}", asStream(row).collect(Collectors.joining("|")));
+                log.trace("Row: {}", asStream(row).collect(Collectors.joining("|")));
                 EntryData entryData = mapRow(row);
                 String id = UUID.randomUUID().toString();
                 if (Objects.equals(entryData.getDate(), lastDate)) {
@@ -423,11 +465,11 @@ public class LedgerService implements LedgerApiDelegate {
                 commandGateway.sendAndWait(CreateEntryCommand.builder().id(id).entry(entryData).build());
                 imported++;
             } catch (RuntimeException exception) {
-                LOGGER.warn("Exception while importing entry: {}", exception.toString());
+                log.warn("Exception while importing entry: {}", exception.toString());
                 failed++;
             }
         }
-        LOGGER.info("Entries imported: {}: failed: {}", imported, failed);
+        log.info("Entries imported: {}: failed: {}", imported, failed);
     }
 
     private EntryData mapRow(CSVRecord row) {
@@ -435,9 +477,9 @@ public class LedgerService implements LedgerApiDelegate {
         for (Map.Entry<String,String> entry : row.toMap().entrySet()) {
             if (mapTo(entryData, stringSetterMap, Function.identity(), entry) ||
                 mapTo(entryData, dateSetterMap, this::toLocalDate, entry)) {
-                LOGGER.trace("Mapped: {}: {}", entry.getKey(), entry.getValue());
+                log.trace("Mapped: {}: {}", entry.getKey(), entry.getValue());
             } else {
-                LOGGER.warn("Unable to map: {}, {}", entry.getKey(), entry.getValue());
+                log.warn("Unable to map: {}, {}", entry.getKey(), entry.getValue());
             }
         }
         return entryData;

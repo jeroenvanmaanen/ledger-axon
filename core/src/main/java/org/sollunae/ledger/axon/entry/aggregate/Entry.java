@@ -2,12 +2,11 @@ package org.sollunae.ledger.axon.entry.aggregate;
 
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.axonframework.commandhandling.CommandHandler;
 import org.axonframework.eventsourcing.EventSourcingHandler;
 import org.axonframework.modelling.command.AggregateIdentifier;
 import org.axonframework.spring.stereotype.Aggregate;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.sollunae.ledger.axon.LedgerCommand;
 import org.sollunae.ledger.axon.LedgerCommandGateway;
 import org.sollunae.ledger.axon.compound.command.CompoundAddEntryCommand;
@@ -17,17 +16,16 @@ import org.sollunae.ledger.axon.entry.event.*;
 import org.sollunae.ledger.model.CompoundMemberData;
 import org.sollunae.ledger.model.EntryData;
 
-import java.lang.invoke.MethodHandles;
 import java.util.Objects;
 import java.util.function.Function;
 
 import static org.axonframework.modelling.command.AggregateLifecycle.apply;
 
+@Slf4j
 @Aggregate
 @Getter
 @NoArgsConstructor
 public class Entry {
-    private static final Logger LOGGER = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
     @AggregateIdentifier
     private String id;
@@ -40,11 +38,11 @@ public class Entry {
     @CommandHandler
     public Entry(CreateEntryCommandUnsafe createCommand) {
         id = createCommand.getId();
-        LOGGER.trace("Create entry: {}: helper: {}", id);
+        log.trace("Create entry: {}: helper: {}", id);
         EntryData data = createCommand.getEntry();
         data.setId(id);
         this.data = data;
-        LOGGER.debug("Created entry: {}", data.getKey());
+        log.debug("Created entry: {}", data.getKey());
         apply(EntryCreatedEvent.builder().id(id).data(data).build());
     }
 
@@ -57,10 +55,19 @@ public class Entry {
     @CommandHandler
     public void handle(EntryAddToCompoundCommand entryAddToCompoundCommand, LedgerCommandGateway commandGateway) {
         String compoundId = entryAddToCompoundCommand.getCompoundId();
+        if (compoundId == null) {
+            throw new IllegalArgumentException("Compound ID should not be null");
+        }
         if (Objects.equals(compoundId, this.compoundId)) {
             return;
         }
-        LOGGER.trace("On handle entry add to compound command: data: {}", data.toString().replaceAll("[ \t\n]+", " "));
+        log.trace("On handle entry add to compound command: data: {}", data.toString().replaceAll("[ \t\n]+", " "));
+        if (this.compoundId != null) {
+            log.debug("Remove entry from previous compound: {}: {}", id, this.compoundId);
+            LedgerCommand compoundRemoveEntryCommand = CompoundRemoveEntryCommand.builder()
+                .id(this.compoundId).entryId(id).build();
+            commandGateway.sendAndWait(compoundRemoveEntryCommand);
+        }
         CompoundMemberData member = new CompoundMemberData();
         member.setId(id);
         member.setKey(data.getKey());

@@ -285,6 +285,16 @@ paths:
       responses:
         200:
           description: Successful operation
+  /api/compound/check-all:
+    post:
+      tags:
+      - Ledger
+      description: Check all Compound Transactions for member Entries that don't link back
+      operationId: checkCompoundTransactions
+      parameters:
+      responses:
+        200:
+          description: Successful operation
   /api/entry/upload/{format}:
     post:
       tags:
