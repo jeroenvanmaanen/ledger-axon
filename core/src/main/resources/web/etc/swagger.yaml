@@ -299,17 +299,17 @@ paths:
         description: Format of the CSV file (see org.apache.commons.csv.CSVFormat#Predefined)
         required: true
         type: string
-        enum:
-        - Default
-        - Excel
-        - InformixUnload
-        - InformixUnloadCsv
-        - MySQL
-        - Oracle
-        - PostgreSQLCsv
-        - PostgreSQLText
-        - RFC4180
-        - TDF
+#        enum: # Either SwaggerCodegen or Springfox generates extra quotation marks that make this unusable
+#        - Default
+#        - Excel
+#        - InformixUnload
+#        - InformixUnloadCsv
+#        - MySQL
+#        - Oracle
+#        - PostgreSQLCsv
+#        - PostgreSQLText
+#        - RFC4180
+#        - TDF
       - in: formData
         name: data
         description: The data to upload
