@@ -11,4 +11,5 @@ public class UniqueBucketChildAddedEvent {
     String parentId;
     String childId;
     String keyPrefix;
+    String fullPrefix;
 }

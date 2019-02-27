@@ -327,6 +327,26 @@ paths:
       responses:
         200:
           description: Successful operation
+  /api/admin/unique-bucket/clean-existing-keys:
+    post:
+      tags:
+      - Ledger
+      description: Move existing keys to their respective child buckets
+      operationId: cleanExistingKeys
+      responses:
+        200:
+          description: Successful operation
+  /api/admin/unique-bucket:
+    get:
+      tags:
+      - Ledger
+      description: Describe all unique buckets
+      operationId: describeUniqueBuckets
+      responses:
+        200:
+          description: Successful operation
+          schema:
+            $ref: "#/definitions/ArrayOfUniqueBucket"
 definitions:
   AccountData:
     type: object
@@ -460,6 +480,22 @@ definitions:
     type: array
     items:
       $ref: "#/definitions/CompoundData"
+  UniqueBucket:
+    type: object
+    properties:
+      id:
+        type: string
+      fullKeyPrefix:
+        type: string
+      keyPrefix:
+        type: string
+      parentId:
+        type: string
+  ArrayOfUniqueBucket:
+    type: array
+    items:
+      $ref: "#/definitions/UniqueBucket"
+
 securityDefinitions:
   ledger_auth:
     type: oauth2

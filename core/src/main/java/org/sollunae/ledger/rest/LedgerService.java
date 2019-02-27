@@ -23,6 +23,7 @@ import org.sollunae.ledger.axon.entry.persistence.EntryDocument;
 import org.sollunae.ledger.axon.entry.persistence.LedgerEntryRepository;
 import org.sollunae.ledger.axon.entry.query.EntriesWithDatePrefixQuery;
 import org.sollunae.ledger.axon.entry.query.EntryByIdQuery;
+import org.sollunae.ledger.axon.unique.process.UniqueKeyService;
 import org.sollunae.ledger.model.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -55,12 +56,14 @@ public class LedgerService implements LedgerApiDelegate {
     private final Map<String,CSVFormat> csvFormatMap = new HashMap<>();
     private final Map<String, BiConsumer<EntryData,String>> stringSetterMap = new HashMap<>();
     private final Map<String, BiConsumer<EntryData,LocalDate>> dateSetterMap = new HashMap<>();
+    private final UniqueKeyService uniqueKeyService;
 
-    public LedgerService(LedgerCommandGateway ledgerCommandGateway, QueryGateway queryGateway, LedgerEntryRepository entryRepository, LedgerCompoundRepository compoundRepository) {
+    public LedgerService(LedgerCommandGateway ledgerCommandGateway, QueryGateway queryGateway, LedgerEntryRepository entryRepository, LedgerCompoundRepository compoundRepository, UniqueKeyService uniqueKeyService) {
         this.commandGateway = ledgerCommandGateway;
         this.queryGateway = queryGateway;
         this.entryRepository = entryRepository;
         this.compoundRepository = compoundRepository;
+        this.uniqueKeyService = uniqueKeyService;
         for (CSVFormat.Predefined csvFormat : CSVFormat.Predefined.values()) {
             csvFormatMap.put(csvFormat.name(), csvFormat.getFormat());
         }
@@ -446,6 +449,7 @@ public class LedgerService implements LedgerApiDelegate {
         csvFormat = csvFormat.withFirstRecordAsHeader();
         Iterable<CSVRecord> rows = csvFormat.parse(reader);
         int imported = 0;
+        int skipped = 0;
         int failed = 0;
         LocalDate lastDate = LocalDate.MIN;
         int sequence = 0;
@@ -462,14 +466,18 @@ public class LedgerService implements LedgerApiDelegate {
                 }
                 String key = DateTimeFormatter.ISO_LOCAL_DATE.format(lastDate) + "_" + sequence;
                 entryData.setKey(key);
-                commandGateway.sendAndWait(CreateEntryCommand.builder().id(id).entry(entryData).build());
-                imported++;
+                String result = commandGateway.sendAndWait(CreateEntryCommand.builder().id(id).entry(entryData).build());
+                if (result != null) {
+                    imported++;
+                } else {
+                    skipped++;
+                }
             } catch (RuntimeException exception) {
                 log.warn("Exception while importing entry: {}", exception.toString());
                 failed++;
             }
         }
-        log.info("Entries imported: {}: failed: {}", imported, failed);
+        log.info("Entries imported: {}: skipped: {}: failed: {}", imported, skipped, failed);
     }
 
     private EntryData mapRow(CSVRecord row) {
@@ -501,5 +509,18 @@ public class LedgerService implements LedgerApiDelegate {
         } catch (DateTimeException exception) {
             return LocalDate.parse(value, DateTimeFormatter.ofPattern("yyyyMMdd"));
         }
+    }
+
+    @Override
+    public ResponseEntity<Void> cleanExistingKeys() {
+        uniqueKeyService.cleanUniqueKeys();
+        return ResponseEntity.ok(null);
+    }
+
+    @Override
+    public ResponseEntity<ArrayOfUniqueBucket> describeUniqueBuckets() {
+        ArrayOfUniqueBucket result = new ArrayOfUniqueBucket();
+        result.addAll(uniqueKeyService.describeUniqueBuckets());
+        return ResponseEntity.ok(result);
     }
 }

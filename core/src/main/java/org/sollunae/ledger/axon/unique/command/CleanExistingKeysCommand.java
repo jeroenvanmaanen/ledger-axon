@@ -7,12 +7,10 @@ import org.sollunae.ledger.axon.LedgerCommand;
 
 @Value
 @Builder
-public class CreateUniqueBucketCommand implements LedgerCommand {
+public class CleanExistingKeysCommand implements LedgerCommand {
 
     @TargetAggregateIdentifier
     private String id;
 
     private String fullPrefix;
-    private int maxKeys;
-    private int childKeyPrefixLength;
 }

@@ -9,6 +9,7 @@ import lombok.Value;
 @JsonDeserialize(builder = UniqueBucketAddedEvent.UniqueBucketAddedEventBuilder.class)
 public class UniqueBucketAddedEvent {
     private String id;
+    private String fullPrefix;
     private int maxKeys;
     private int childKeyPrefixLength;
 }

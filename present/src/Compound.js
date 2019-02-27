@@ -106,7 +106,7 @@ class Compound extends Component {
                     <p>Transactions:</p>
                     <ul>
                         {this.state.transactions.map((transaction) => {
-                            return (<li key={transaction.id}>{transaction.id}: {transaction.amountCents} {transaction.jar} {transaction.contraJar}</li>);
+                            return (<li key={transaction.id} data-id={transaction.id}>{transaction.key}: {transaction.amountCents} {transaction.jar} {transaction.contraJar}</li>);
                         })}
                     </ul>
                   </div>
