@@ -1,10 +1,9 @@
-package org.sollunae.ledger.once;
+package org.sollunae.ledger.axon.once;
 
 import lombok.Builder;
 import lombok.Value;
 import lombok.experimental.Wither;
 import org.axonframework.modelling.command.AggregateIdentifier;
-import org.sollunae.ledger.axon.once.CascadingCommand;
 
 @Value
 @Builder

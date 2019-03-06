@@ -1,9 +1,8 @@
-package org.sollunae.ledger.once;
+package org.sollunae.ledger.axon.once;
 
 import lombok.Builder;
 import lombok.Value;
 import lombok.experimental.Wither;
-import org.sollunae.ledger.axon.once.WithAllocatedTokens;
 
 import java.util.Map;
 

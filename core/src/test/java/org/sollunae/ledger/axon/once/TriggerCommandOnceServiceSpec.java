@@ -1,10 +1,7 @@
-package org.sollunae.ledger.once;
+package org.sollunae.ledger.axon.once;
 
 import lombok.extern.slf4j.Slf4j;
 import org.junit.Test;
-import org.sollunae.ledger.axon.once.CascadingCommandTracker;
-import org.sollunae.ledger.axon.once.CommandCounter;
-import org.sollunae.ledger.axon.once.TriggerCommandOnceService;
 import org.springframework.data.util.Pair;
 
 import java.util.Arrays;
