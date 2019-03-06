@@ -1,14 +1,11 @@
 package org.sollunae.ledger.axon.once;
 
-import org.springframework.data.util.Pair;
+import java.util.Map;
 
 public interface WithAllocatedTokens<T> {
 
-    Pair<Long,Long> getAllocatedTokens();
+    String getId();
+    Map<String,Long> getAllocatedTokens();
 
-    T withAllocatedTokens(Pair<Long,Long> segment);
-
-    default T withAllocatedToken(long token) {
-        return withAllocatedTokens(Pair.of(token, token));
-    }
+    T withAllocatedTokens(Map<String,Long> segment);
 }

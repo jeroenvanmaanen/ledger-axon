@@ -4,10 +4,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.util.Pair;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Consumer;
+import java.util.function.Function;
 
 @Slf4j
 @Component
@@ -15,42 +15,48 @@ public class TriggerCommandOnceService {
 
     public CommandCounter createCounter() {
         return CommandCounter.builder()
-            .counter(new AtomicLong())
-            .state(new ArrayList<>(Collections.singleton(Pair.of(0L,0L))))
+            .allocationCounters(new HashMap<>())
+            .fulfilledState(new HashMap<>())
             .build();
     }
 
-    public RegisterFulfilledCommand createAnswer(CascadingCommand command) {
-        return RegisterFulfilledCommand.builder()
-            .id(command.getSourceAggregateIdentifier())
-            .token(command.getAllocatedToken())
-            .build();
-    }
-
-    public <T> T allocate(CascadingCommandTracker tracker, WithAllocatedTokens<T> event) {
-        long token = allocate(tracker.getCommandCounter());
-        return event.withAllocatedToken(token);
-    }
-
-    public <T> T allocate(CascadingCommandTracker tracker, WithAllocatedTokens<T> event, long amount) {
-        Pair<Long,Long> tokens = allocate(tracker.getCommandCounter(), amount);
+    public <T extends WithAllocatedTokens<T>> T allocate(CascadingCommandTracker tracker, T event, String... targetIds) {
+        if (targetIds == null || targetIds.length < 1) {
+            return event;
+        }
+        Map<String,Long> tokens = new HashMap<>();
+        for (String targetId : targetIds) {
+            long token = allocate(tracker.getCommandCounter(), targetId);
+            tokens.put(targetId, token);
+        }
         return event.withAllocatedTokens(tokens);
     }
 
-    public long allocate(CommandCounter commandCounter) {
-        return commandCounter.getCounter().incrementAndGet();
+    public long allocate(CommandCounter commandCounter, String targetId) {
+        return getAllocationCounter(commandCounter, targetId).incrementAndGet();
     }
 
-    public Pair<Long,Long> allocate(CommandCounter commandCounter, long amount) {
-        if (amount < 1) {
-            return null;
-        }
-        long last = commandCounter.getCounter().addAndGet(amount);
-        return Pair.of(last - amount + 1, last);
+    private AtomicLong getAllocationCounter(CommandCounter commandCounter, String targetId) {
+        return commandCounter.getAllocationCounters().computeIfAbsent(targetId, k -> new AtomicLong());
     }
 
-    public boolean checkIfUnfulfilled(CommandCounter commandCounter, long token) {
-        for (Pair<Long,Long> segment : commandCounter.getState()) {
+    public <T extends CascadingCommand<T>> Function<T,T> prepareCommand(WithAllocatedTokens<?> event) {
+        return command -> prepareCommand(command, event);
+    }
+
+    private <T extends CascadingCommand<T>> T prepareCommand(T command, WithAllocatedTokens<?> event) {
+        return command
+            .withSourceAggregateIdentifier(event.getId())
+            .withAllocatedToken(event.getAllocatedTokens().get(command.getId()));
+    }
+
+    public boolean checkIfUnfulfilled(CascadingCommandTracker tracker, CascadingCommand<?> command) {
+        CommandCounter commandCounter = tracker.getCommandCounter();
+        return checkIfUnfulfilled(commandCounter, command.getSourceAggregateIdentifier(), command.getAllocatedToken());
+    }
+
+    public boolean checkIfUnfulfilled(CommandCounter commandCounter, String sourceId, long token) {
+        for (Pair<Long,Long> segment : getFulfilledState(commandCounter, sourceId)) {
             if (token < segment.getFirst()) {
                 return true;
             } else if (token <= segment.getSecond()) {
@@ -60,9 +66,22 @@ public class TriggerCommandOnceService {
         return true;
     }
 
-    public void registerFulfilled(CommandCounter commandCounter, long token) {
+    public <T extends CascadingCommand<T>> void doIfUnfulfilled(T command, CascadingCommandTracker tracker, Consumer<T> action) {
+        if (checkIfUnfulfilled(tracker, command)) {
+            registerFulfilled(tracker, command);
+            action.accept(command);
+        } else {
+            log.trace("Skip already fulfilled command: {} -({})-> {}", command.getSourceAggregateIdentifier(), command.getAllocatedToken(), command.getId());
+        }
+    }
+
+    private void registerFulfilled(CascadingCommandTracker tracker, CascadingCommand<?> answer) {
+        registerFulfilled(tracker.getCommandCounter(), answer.getSourceAggregateIdentifier(), answer.getAllocatedToken());
+    }
+
+    public void registerFulfilled(CommandCounter commandCounter, String sourceId, long token) {
         int index = 0;
-        List<Pair<Long,Long>> state = commandCounter.getState();
+        List<Pair<Long,Long>> state = getFulfilledState(commandCounter, sourceId);
         for (Pair<Long,Long> segment : state) {
             long preceeding = segment.getFirst() - 1;
             if (token < preceeding) {
@@ -89,7 +108,8 @@ public class TriggerCommandOnceService {
         }
     }
 
-    public void registerFulfilled(CascadingCommandTracker tracker, RegisterFulfilledCommand answer) {
-        registerFulfilled(tracker.getCommandCounter(), answer.getToken());
+    private List<Pair<Long,Long>> getFulfilledState(CommandCounter commandCounter, String sourceId) {
+        return commandCounter.getFulfilledState()
+            .computeIfAbsent(sourceId, k -> new ArrayList<>(Collections.singleton(Pair.of(0L, 0L))));
     }
 }
