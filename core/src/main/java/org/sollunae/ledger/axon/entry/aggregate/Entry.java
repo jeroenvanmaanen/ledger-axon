@@ -13,6 +13,10 @@ import org.sollunae.ledger.axon.compound.command.CompoundAddEntryCommand;
 import org.sollunae.ledger.axon.compound.command.CompoundRemoveEntryCommand;
 import org.sollunae.ledger.axon.entry.command.*;
 import org.sollunae.ledger.axon.entry.event.*;
+import org.sollunae.ledger.axon.once.CascadingCommandTracker;
+import org.sollunae.ledger.axon.once.CommandCounter;
+import org.sollunae.ledger.axon.once.TokenFulfilledEvent;
+import org.sollunae.ledger.axon.once.TriggerCommandOnceService;
 import org.sollunae.ledger.model.CompoundMemberData;
 import org.sollunae.ledger.model.EntryData;
 
@@ -25,31 +29,42 @@ import static org.axonframework.modelling.command.AggregateLifecycle.apply;
 @Aggregate
 @Getter
 @NoArgsConstructor
-public class Entry {
+public class Entry implements CascadingCommandTracker {
 
     @AggregateIdentifier
     private String id;
 
+    private CommandCounter commandCounter;
     private EntryData data;
     private String compoundId;
     private String intendedJar;
     private Boolean balanceMatchesIntention;
 
     @CommandHandler
-    public Entry(CreateEntryCommandUnsafe createCommand) {
+    public Entry(CreateEntryCommandUnsafe createCommand, TriggerCommandOnceService onceService) {
         id = createCommand.getId();
+        commandCounter = onceService.createCounter();
         log.trace("Create entry: {}: helper: {}", id);
         EntryData data = createCommand.getEntry();
         data.setId(id);
         this.data = data;
         log.debug("Created entry: {}", data.getKey());
-        apply(EntryCreatedEvent.builder().id(id).data(data).build());
+        EntryCreatedEvent event = EntryCreatedEvent.builder()
+            .id(id)
+            .data(data)
+            .build()
+            .map(onceService.allocate(this, id));
+        apply(event);
     }
 
     @EventSourcingHandler
-    public void on(EntryCreatedEvent entryCreatedEvent) {
+    public void on(EntryCreatedEvent entryCreatedEvent, TriggerCommandOnceService onceService) {
+        if (commandCounter == null) {
+            commandCounter = onceService.createCounter();
+        }
         id = entryCreatedEvent.getId();
         data = entryCreatedEvent.getData();
+        onceService.handleTokenAllocations(this, entryCreatedEvent);
     }
 
     @CommandHandler
@@ -114,25 +129,27 @@ public class Entry {
     }
 
     @CommandHandler
-    public void handle(EntryUpdateDataCommand command) {
-        EntryData commandData = command.getData();
-        if (differs(EntryData::getDate, commandData, data) ||
-            differs(EntryData::getKey, commandData, data) ||
-            differs(EntryData::getAccount, commandData, data) ||
-            differs(EntryData::getJar, commandData, data) ||
-            differs(EntryData::getAmount, commandData, data) ||
-            differs(EntryData::getAmountCents, commandData, data) ||
-            differs(EntryData::getDebetCredit, commandData, data) ||
-            differs(EntryData::getCode, commandData, data) ||
-            differs(EntryData::getKind, commandData, data) ||
-            differs(EntryData::getContraAccount, commandData, data) ||
-            differs(EntryData::getContraJar, commandData, data) ||
-            differs(EntryData::getDescription, commandData, data) ||
-            differs(EntryData::getRemarks, commandData, data)
-        ) {
-            commandData.setId(id);
-            apply(EntryDataUpdatedEvent.builder().id(id).data(commandData).build());
-        }
+    public void handle(EntryUpdateDataCommand command, TriggerCommandOnceService onceService) {
+        onceService.doIfUnfulfilled(command, this, c -> {
+            EntryData commandData = command.getData();
+            if (differs(EntryData::getDate, commandData, data) ||
+                differs(EntryData::getKey, commandData, data) ||
+                differs(EntryData::getAccount, commandData, data) ||
+                differs(EntryData::getJar, commandData, data) ||
+                differs(EntryData::getAmount, commandData, data) ||
+                differs(EntryData::getAmountCents, commandData, data) ||
+                differs(EntryData::getDebetCredit, commandData, data) ||
+                differs(EntryData::getCode, commandData, data) ||
+                differs(EntryData::getKind, commandData, data) ||
+                differs(EntryData::getContraAccount, commandData, data) ||
+                differs(EntryData::getContraJar, commandData, data) ||
+                differs(EntryData::getDescription, commandData, data) ||
+                differs(EntryData::getRemarks, commandData, data)
+            ) {
+                commandData.setId(id);
+                apply(EntryDataUpdatedEvent.builder().id(id).data(commandData).build());
+            }
+        });
     }
 
     private <T> boolean differs(Function<EntryData,T> getter, EntryData object, EntryData other) {
@@ -142,6 +159,11 @@ public class Entry {
     @EventSourcingHandler
     public void on(EntryDataUpdatedEvent event) {
         data = event.getData();
+    }
+
+    @EventSourcingHandler
+    public void on(TokenFulfilledEvent event, TriggerCommandOnceService onceService) {
+        onceService.registerFulfilled(this, event);
     }
 
     @CommandHandler

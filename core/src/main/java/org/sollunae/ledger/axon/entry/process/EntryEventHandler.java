@@ -9,6 +9,7 @@ import org.sollunae.ledger.axon.entry.aggregate.Entry;
 import org.sollunae.ledger.axon.entry.command.EntryUpdateDataCommand;
 import org.sollunae.ledger.axon.entry.event.*;
 import org.sollunae.ledger.axon.entry.persistence.EntryDocument;
+import org.sollunae.ledger.axon.once.TriggerCommandOnceService;
 import org.sollunae.ledger.model.AccountData;
 import org.sollunae.ledger.model.EntryData;
 import org.sollunae.ledger.util.StringUtil;
@@ -28,10 +29,12 @@ public class EntryEventHandler {
     private static final String CREDIT = "Credit";
 
     private final LedgerCommandGateway commandGateway;
+    private final TriggerCommandOnceService onceService;
     private final MongoTemplate mongoTemplate;
 
-    public EntryEventHandler(LedgerCommandGateway commandGateway, MongoTemplate mongoTemplate) {
+    public EntryEventHandler(LedgerCommandGateway commandGateway, TriggerCommandOnceService onceService, MongoTemplate mongoTemplate) {
         this.commandGateway = commandGateway;
+        this.onceService = onceService;
         this.mongoTemplate = mongoTemplate;
     }
 
@@ -61,7 +64,12 @@ public class EntryEventHandler {
             LOGGER.info("Created entry: {}: {}: {},{}{}", key, thisJar, cents/100, justCents, hide ? " (hidden)" : "");
         }
 
-        commandGateway.send(EntryUpdateDataCommand.builder().id(entryCreatedEvent.getId()).data(entry).build());
+        EntryUpdateDataCommand command = EntryUpdateDataCommand.builder()
+            .id(entryCreatedEvent.getId())
+            .data(entry)
+            .build()
+            .map(onceService.prepareCommand(entryCreatedEvent));
+        commandGateway.send(command);
     }
 
     private String getJar(AccountDocument account) {
