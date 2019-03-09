@@ -14,7 +14,8 @@ import org.axonframework.extensions.mongo.eventsourcing.tokenstore.MongoTokenSto
 import org.axonframework.serialization.Serializer;
 import org.axonframework.serialization.json.JacksonSerializer;
 import org.axonframework.spring.config.annotation.AnnotationCommandHandlerBeanPostProcessor;
-import org.sollunae.ledger.axon.LedgerCommandGateway;
+import org.sollunae.ledger.axon.once.TriggerCommandOnceService;
+import org.sollunae.ledger.util.AggregateLifecycleBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -71,5 +72,10 @@ public class AxonConfig {
     @Bean
     public AnnotationCommandHandlerBeanPostProcessor annotationCommandHandlerBeanPostProcessor() {
         return new AnnotationCommandHandlerBeanPostProcessor();
+    }
+
+    @Bean
+    public TriggerCommandOnceService onceService(AggregateLifecycleBean aggregateLifecycle) {
+        return new TriggerCommandOnceService(aggregateLifecycle);
     }
 }

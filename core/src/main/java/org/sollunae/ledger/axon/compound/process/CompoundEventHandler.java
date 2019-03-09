@@ -9,6 +9,7 @@ import org.sollunae.ledger.axon.compound.event.*;
 import org.sollunae.ledger.axon.compound.persistence.CompoundDocument;
 import org.sollunae.ledger.axon.entry.command.EntryUpdateJarCommand;
 import org.sollunae.ledger.axon.entry.command.EntryUpdateStatusCommand;
+import org.sollunae.ledger.axon.once.TriggerCommandOnceService;
 import org.sollunae.ledger.model.CompoundMemberData;
 import org.sollunae.ledger.util.StringUtil;
 import org.springframework.data.mongodb.core.MongoTemplate;
@@ -37,13 +38,18 @@ public class CompoundEventHandler {
     }
 
     @EventHandler
-    public void on(CompoundEntryAddedEvent event) {
+    public void on(CompoundEntryAddedEvent event, TriggerCommandOnceService onceService) {
         String compoundId = event.getCompoundId();
         CompoundMemberData member = event.getMember();
         LOGGER.debug("On compound entry added event: member: {}", member.toString().replaceAll("[ \t\n]+", " "));
         Update update = Update.update("memberMap." + member.getId(), member);
         upsert(update, compoundId);
-        commandGateway.send(CompoundRebalanceCommand.builder().id(compoundId).addedEntryId(member.getId()).build());
+        CompoundRebalanceCommand.builder()
+            .id(compoundId)
+            .addedEntryId(member.getId())
+            .build()
+            .map(onceService.prepareCommand(event))
+            .send(commandGateway);
     }
 
     @EventHandler

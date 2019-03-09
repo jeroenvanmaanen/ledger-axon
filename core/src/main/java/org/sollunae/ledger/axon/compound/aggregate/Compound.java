@@ -2,6 +2,7 @@ package org.sollunae.ledger.axon.compound.aggregate;
 
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.axonframework.commandhandling.CommandHandler;
 import org.axonframework.eventsourcing.EventSourcingHandler;
 import org.axonframework.modelling.command.AggregateIdentifier;
@@ -10,6 +11,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.sollunae.ledger.axon.compound.command.*;
 import org.sollunae.ledger.axon.compound.event.*;
+import org.sollunae.ledger.axon.once.CascadingCommandTracker;
+import org.sollunae.ledger.axon.once.CommandCounter;
+import org.sollunae.ledger.axon.once.TokenFulfilledEvent;
+import org.sollunae.ledger.axon.once.TriggerCommandOnceService;
 import org.sollunae.ledger.model.CompoundMemberData;
 
 import java.lang.invoke.MethodHandles;
@@ -23,12 +28,14 @@ import static org.sollunae.ledger.util.StringUtil.asString;
 @Aggregate
 @Getter
 @NoArgsConstructor
-public class Compound {
+@Slf4j
+public class Compound implements CascadingCommandTracker {
     private static final Logger LOGGER = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
     @AggregateIdentifier
     private String id;
 
+    private CommandCounter commandCounter;
     private String key = null;
     private String intendedJar = "?";
     private List<String> entryIds = new ArrayList<>();
@@ -44,7 +51,10 @@ public class Compound {
     }
 
     @EventSourcingHandler
-    public void on(CompoundCreatedEvent compoundCreatedEvent) {
+    public void on(CompoundCreatedEvent compoundCreatedEvent, TriggerCommandOnceService onceService) {
+        if (commandCounter == null) {
+            commandCounter = onceService.createCounter();
+        }
         id = compoundCreatedEvent.getId();
     }
 
@@ -84,7 +94,7 @@ public class Compound {
     }
 
     @CommandHandler
-    public void handle(CompoundAddEntryCommand compoundAddEntryCommand) {
+    public void handle(CompoundAddEntryCommand compoundAddEntryCommand, TriggerCommandOnceService onceService) {
         CompoundMemberData member = compoundAddEntryCommand.getMember();
         if (member == null) {
             return;
@@ -93,7 +103,12 @@ public class Compound {
         members.put(entryId, member);
         if (!entryIds.contains(entryId)) {
             entryIds.add(entryId);
-            apply(CompoundEntryAddedEvent.builder().compoundId(id).member(member).build());
+            Object event = CompoundEntryAddedEvent.builder()
+                .compoundId(id)
+                .member(member)
+                .build()
+                .map(onceService.allocate(this, entryId));
+            apply(event);
         }
     }
 
@@ -128,7 +143,13 @@ public class Compound {
     }
 
     @CommandHandler
-    public void handle(CompoundRebalanceCommand command) {
+    public void handle(CompoundRebalanceCommand command, TriggerCommandOnceService onceService) {
+        if (onceService.isFulfilled(this, command)) {
+            String commandClass = command.getClass().getSimpleName();
+            log.trace("Skip already fulfilled command: {}: {} -({})-> {}",
+                commandClass, command.getSourceAggregateIdentifier(), command.getAllocatedToken(), command.getId());
+            return;
+        }
         Map<String, AtomicLong> counters = new HashMap<>();
         for (CompoundMemberData member : members.values()) {
             String thisJar = member.getJar();
@@ -195,6 +216,11 @@ public class Compound {
         Map<String,Long> balance = new HashMap<>();
         counters.forEach((key1, value) -> balance.put(key1, value.longValue()));
         return balance;
+    }
+
+    @EventSourcingHandler
+    public void on(TokenFulfilledEvent event, TriggerCommandOnceService onceService) {
+        onceService.registerFulfilled(this, event);
     }
 
     @EventSourcingHandler

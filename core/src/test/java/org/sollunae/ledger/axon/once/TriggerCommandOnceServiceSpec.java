@@ -2,6 +2,7 @@ package org.sollunae.ledger.axon.once;
 
 import lombok.extern.slf4j.Slf4j;
 import org.junit.Test;
+import org.sollunae.ledger.util.AggregateLifecycleBean;
 import org.springframework.data.util.Pair;
 
 import java.util.Arrays;
@@ -9,6 +10,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
 import static org.junit.Assert.*;
@@ -16,14 +18,16 @@ import static org.junit.Assert.*;
 @Slf4j
 public class TriggerCommandOnceServiceSpec {
 
-    private final TriggerCommandOnceService service = new TriggerCommandOnceService();
+    private final AggregateLifecycleBean aggregateLifecycle = new TestAggregateLifecycleBean();
+    private final TriggerCommandOnceService service = new TriggerCommandOnceService(aggregateLifecycle);
+    private final AtomicReference<CascadingCommandTracker> trackerReference = new AtomicReference<>();
 
     @Test
     public void testRoundTrip() {
         // Aggregate "x" keeps track of cascading commands
         final CommandCounter commandCounterX = service.createCounter();
         CascadingCommandTracker trackerX = () -> commandCounterX;
-        boolean unfulfilled = service.checkIfUnfulfilled(commandCounterX, "y", 1);
+        boolean unfulfilled = service.checkIfUnfulfilled(commandCounterX, "y", 1, "?");
         assertTrue(unfulfilled);
         assertEquals(Collections.singletonList(Pair.of(0L, 0L)), commandCounterX.getFulfilledState().get("y"));
 
@@ -87,6 +91,7 @@ public class TriggerCommandOnceServiceSpec {
 
     private void testDoOnce(CascadingCommandTracker tracker, TestCommand command) {
         log.info("Command: {} -({})-> {}", command.getSourceAggregateIdentifier(), command.getAllocatedToken(), command.getId());
+        trackerReference.set(tracker);
         AtomicBoolean flag = new AtomicBoolean(false);
         assertTrue(service.checkIfUnfulfilled(tracker, command));
         flag.set(false);
@@ -116,7 +121,7 @@ public class TriggerCommandOnceServiceSpec {
         }
         assertEquals(9L, commandCounter.getAllocationCounters().get("y").get());
 
-        boolean unfulfilled = service.checkIfUnfulfilled(commandCounter, "y", 1L);
+        boolean unfulfilled = service.checkIfUnfulfilled(commandCounter, "y", 1L, "?");
         assertTrue(unfulfilled);
         assertEquals(Collections.singletonList(Pair.of(0L, 0L)), commandCounter.getFulfilledState().get("y"));
         service.registerFulfilled(commandCounter, "y", 8L);
@@ -152,7 +157,7 @@ public class TriggerCommandOnceServiceSpec {
         }
         assertEquals(9L, commandCounter.getAllocationCounters().get("y").get());
 
-        boolean unfulfilled = service.checkIfUnfulfilled(commandCounter, "y", 1);
+        boolean unfulfilled = service.checkIfUnfulfilled(commandCounter, "y", 1, "?");
         assertTrue(unfulfilled);
         assertEquals(Collections.singletonList(Pair.of(0L, 0L)), commandCounter.getFulfilledState().get("y"));
         Set<Long> fulfilled = new HashSet<>(Arrays.asList(2L, 3L, 4L, 7L, 9L));
@@ -160,7 +165,16 @@ public class TriggerCommandOnceServiceSpec {
             service.registerFulfilled(commandCounter, "y", item);
         }
         for (long i = 1; i < 12; i++) {
-            assertEquals(String.valueOf(i) + ": ", !fulfilled.contains(i), service.checkIfUnfulfilled(commandCounter, "y", i));
+            assertEquals(String.valueOf(i) + ": ", !fulfilled.contains(i), service.checkIfUnfulfilled(commandCounter, "y", i, "?"));
+        }
+    }
+
+    private class TestAggregateLifecycleBean extends AggregateLifecycleBean {
+        public void apply(Object payload) {
+            if (payload instanceof TokenFulfilledEvent) {
+                TokenFulfilledEvent event = (TokenFulfilledEvent) payload;
+                service.registerFulfilled(trackerReference.get(), event);
+            }
         }
     }
 }

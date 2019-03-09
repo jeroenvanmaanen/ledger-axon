@@ -1,9 +1,8 @@
 package org.sollunae.ledger.axon.once;
 
 import lombok.extern.slf4j.Slf4j;
-import org.axonframework.modelling.command.AggregateLifecycle;
+import org.sollunae.ledger.util.AggregateLifecycleBean;
 import org.springframework.data.util.Pair;
-import org.springframework.stereotype.Component;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
@@ -12,8 +11,13 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 @Slf4j
-@Component
 public class TriggerCommandOnceService {
+
+    private final AggregateLifecycleBean aggregateLifecycle;
+
+    public TriggerCommandOnceService(AggregateLifecycleBean aggregateLifecycle) {
+        this.aggregateLifecycle = aggregateLifecycle;
+    }
 
     public CommandCounter createCounter() {
         return CommandCounter.builder()
@@ -90,22 +94,33 @@ public class TriggerCommandOnceService {
             .withAllocatedToken(token);
     }
 
+    public boolean isFulfilled(CascadingCommandTracker tracker, CascadingCommand<?> command) {
+        return !checkIfUnfulfilled(tracker, command);
+    }
+
     public boolean checkIfUnfulfilled(CascadingCommandTracker tracker, CascadingCommand<?> command) {
         if (tracker == null) {
+            log.debug("Missing tracker: {}: {} -({})-> {}",
+                command.getClass().getSimpleName(), command.getSourceAggregateIdentifier(), command.getId());
             return true;
         }
         CommandCounter commandCounter = tracker.getCommandCounter();
-        return checkIfUnfulfilled(commandCounter, command.getSourceAggregateIdentifier(), command.getAllocatedToken());
+        String sourceId = command.getSourceAggregateIdentifier();
+        String label = command.getId() + ": " + command.getClass().getSimpleName();
+        return checkIfUnfulfilled(commandCounter, sourceId, command.getAllocatedToken(), label);
     }
 
-    public boolean checkIfUnfulfilled(CommandCounter commandCounter, String sourceId, long token) {
+    public boolean checkIfUnfulfilled(CommandCounter commandCounter, String sourceId, long token, String label) {
         if (sourceId == null) {
+            log.debug("Missing source: null -({})-> {}", token, label);
             return false;
         }
         for (Pair<Long,Long> segment : getFulfilledState(commandCounter, sourceId)) {
             if (token < segment.getFirst()) {
+                log.trace("Unfulfilled: {} -({})-> {}", sourceId, token, label);
                 return true;
             } else if (token <= segment.getSecond()) {
+                log.trace("Fulfilled: {} -({})-> {}", sourceId, token, label);
                 return false;
             }
         }
@@ -121,7 +136,7 @@ public class TriggerCommandOnceService {
                 .sourceId(command.getSourceAggregateIdentifier())
                 .token(command.getAllocatedToken())
                 .build();
-            AggregateLifecycle.apply(event);
+            aggregateLifecycle.apply(event);
         } else {
             log.trace("Skip already fulfilled command: {} -({})-> {}: {}", command.getSourceAggregateIdentifier(), command.getAllocatedToken(), command.getId(), command.getClass().getSimpleName());
         }
@@ -134,6 +149,7 @@ public class TriggerCommandOnceService {
             return;
         }
         registerFulfilled(commandCounter, event.getSourceId(), event.getToken());
+        log.trace("Registered as fulfilled: {} -({})-> {}", event.getSourceId(), event.getToken(), event.getId());
     }
 
     public void registerFulfilled(CommandCounter commandCounter, String sourceId, long token) {
