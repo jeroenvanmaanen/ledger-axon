@@ -100,7 +100,7 @@ public class TriggerCommandOnceService {
 
     public boolean checkIfUnfulfilled(CommandCounter commandCounter, String sourceId, long token) {
         if (sourceId == null) {
-            return true;
+            return false;
         }
         for (Pair<Long,Long> segment : getFulfilledState(commandCounter, sourceId)) {
             if (token < segment.getFirst()) {
