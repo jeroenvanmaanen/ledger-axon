@@ -64,12 +64,12 @@ public class EntryEventHandler {
             LOGGER.info("Created entry: {}: {}: {},{}{}", key, thisJar, cents/100, justCents, hide ? " (hidden)" : "");
         }
 
-        EntryUpdateDataCommand command = EntryUpdateDataCommand.builder()
+        EntryUpdateDataCommand.builder()
             .id(entryCreatedEvent.getId())
             .data(entry)
             .build()
-            .map(onceService.prepareCommand(entryCreatedEvent));
-        commandGateway.send(command);
+            .map(onceService.prepareCommand(entryCreatedEvent))
+            .send(commandGateway);
     }
 
     private String getJar(AccountDocument account) {
