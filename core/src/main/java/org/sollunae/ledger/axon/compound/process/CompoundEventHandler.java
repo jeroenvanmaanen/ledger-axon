@@ -53,16 +53,18 @@ public class CompoundEventHandler {
     }
 
     @EventHandler
-    public void on(CompoundEntryUpdatedEvent event) {
+    public void on(CompoundEntryUpdatedEvent event, TriggerCommandOnceService onceService) {
         String entryId = event.getEntryId();
         String intendedJar = event.getIntendedJar();
         Boolean status = event.getBalanceMatchesIntention();
         LOGGER.debug("On compound entry updated event: {}: {}: {}", entryId, intendedJar, status);
-        commandGateway.send(EntryUpdateJarCommand.builder()
+        EntryUpdateJarCommand.builder()
             .id(entryId)
             .intendedJar(intendedJar)
             .balanceMatchesIntention(status)
-            .build());
+            .build()
+            .map(onceService.prepareCommand(event))
+            .send(commandGateway);
     }
 
     @EventHandler
@@ -85,7 +87,7 @@ public class CompoundEventHandler {
     }
 
     @EventHandler
-    public void on(CompoundIntendedJarUpdatedEvent event) {
+    public void on(CompoundIntendedJarUpdatedEvent event, TriggerCommandOnceService onceService) {
         String compoundId = event.getCompoundId();
         Update update = Update.update("intendedJar", event.getIntendedJar())
             .set("balanceMatchesIntention", event.isBalanceMatchesIntention());
@@ -93,12 +95,13 @@ public class CompoundEventHandler {
         LOGGER.trace("Send EntryUpdateJarCommands to: {}", StringUtil.asString(event.getEntryIds()));
         for (String entryId : event.getEntryIds()) {
             LOGGER.trace("Send EntryUpdateJarCommand to: {}", entryId);
-            commandGateway.sendAndWait(EntryUpdateJarCommand.builder()
+            EntryUpdateJarCommand.builder()
                 .id(entryId)
                 .intendedJar(event.getIntendedJar())
                 .balanceMatchesIntention(event.isBalanceMatchesIntention())
                 .build()
-            );
+                .map(onceService.prepareCommand(event))
+                .sendAndWait(commandGateway);
         }
     }
 

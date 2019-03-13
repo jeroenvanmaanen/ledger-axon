@@ -72,7 +72,7 @@ public class Compound implements CascadingCommandTracker {
     }
 
     @CommandHandler
-    public void handle(CompoundUpdateIntendedJarCommand command) {
+    public void handle(CompoundUpdateIntendedJarCommand command, TriggerCommandOnceService onceService) {
         if (Objects.equals(intendedJar, command.getIntendedJar())) {
             LOGGER.debug("Target jar unchanged: {}: {}", id, intendedJar);
             return;
@@ -80,12 +80,14 @@ public class Compound implements CascadingCommandTracker {
         String newIntendedJar = command.getIntendedJar();
         LOGGER.debug("Target jar: {}: {} -> {}", id, intendedJar, newIntendedJar);
         intendedJar = newIntendedJar;
-        apply(CompoundIntendedJarUpdatedEvent.builder()
+        CompoundIntendedJarUpdatedEvent.builder()
             .compoundId(command.getId())
             .intendedJar(command.getIntendedJar())
             .balanceMatchesIntention(Objects.equals(affected, intendedJar))
             .entryIds(entryIds)
-            .build());
+            .build()
+            .map(onceService.allocate(this, entryIds.toArray(new String[0])))
+            .apply();
     }
 
     @EventSourcingHandler
@@ -145,11 +147,9 @@ public class Compound implements CascadingCommandTracker {
     @CommandHandler
     public void handle(CompoundRebalanceCommand command, TriggerCommandOnceService onceService) {
         if (onceService.isFulfilled(this, command)) {
-            String commandClass = command.getClass().getSimpleName();
-            log.trace("Skip already fulfilled command: {}: {} -({})-> {}",
-                commandClass, command.getSourceAggregateIdentifier(), command.getAllocatedToken(), command.getId());
             return;
         }
+        onceService.sendTokenFulfilledEvent(command);
         Map<String, AtomicLong> counters = new HashMap<>();
         for (CompoundMemberData member : members.values()) {
             String thisJar = member.getJar();
@@ -185,12 +185,14 @@ public class Compound implements CascadingCommandTracker {
         } else if (command.getAddedEntryId() != null) {
             String addedEntryId = command.getAddedEntryId();
             LOGGER.debug("Register compound status for new entry: ", addedEntryId);
-            apply(CompoundEntryUpdatedEvent.builder()
+            CompoundEntryUpdatedEvent.builder()
                 .compoundId(id)
                 .entryId(addedEntryId)
                 .intendedJar(intendedJar)
                 .balanceMatchesIntention(oldStatus)
-                .build());
+                .build()
+                .map(onceService.allocate(this, addedEntryId))
+                .apply();
         } else {
             LOGGER.debug("Balance is unchanged");
         }

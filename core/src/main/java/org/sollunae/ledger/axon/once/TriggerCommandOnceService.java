@@ -26,7 +26,7 @@ public class TriggerCommandOnceService {
             .build();
     }
 
-    public <T extends WithAllocatedTokens<T>> Function<T,T> allocate(CascadingCommandTracker tracker, String targetIds) {
+    public <T extends WithAllocatedTokens<T>> Function<T,T> allocate(CascadingCommandTracker tracker, String... targetIds) {
         return event -> allocate(tracker, event, targetIds);
     }
 
@@ -131,15 +131,19 @@ public class TriggerCommandOnceService {
         if (checkIfUnfulfilled(tracker, command)) {
             log.trace("Execute command once: {} -({})-> {}: {}", command.getSourceAggregateIdentifier(), command.getAllocatedToken(), command.getId(), command.getClass().getSimpleName());
             action.accept(command);
-            TokenFulfilledEvent event = TokenFulfilledEvent.builder()
-                .id(command.getId())
-                .sourceId(command.getSourceAggregateIdentifier())
-                .token(command.getAllocatedToken())
-                .build();
-            aggregateLifecycle.apply(event);
+            sendTokenFulfilledEvent(command);
         } else {
             log.trace("Skip already fulfilled command: {} -({})-> {}: {}", command.getSourceAggregateIdentifier(), command.getAllocatedToken(), command.getId(), command.getClass().getSimpleName());
         }
+    }
+
+    public void sendTokenFulfilledEvent(CascadingCommand<?> command) {
+        TokenFulfilledEvent event = TokenFulfilledEvent.builder()
+            .id(command.getId())
+            .sourceId(command.getSourceAggregateIdentifier())
+            .token(command.getAllocatedToken())
+            .build();
+        aggregateLifecycle.apply(event);
     }
 
     public void registerFulfilled(CascadingCommandTracker tracker, TokenFulfilledEvent event) {

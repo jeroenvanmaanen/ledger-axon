@@ -7,4 +7,7 @@ public interface LedgerCommand {
         commandGateway.send(this);
         return this;
     }
+    default String sendAndWait(LedgerCommandGateway commandGateway) {
+        return commandGateway.sendAndWait(this);
+    }
 }

@@ -130,26 +130,28 @@ public class Entry implements CascadingCommandTracker {
 
     @CommandHandler
     public void handle(EntryUpdateDataCommand command, TriggerCommandOnceService onceService) {
-        onceService.doIfUnfulfilled(command, this, c -> {
-            EntryData commandData = command.getData();
-            if (differs(EntryData::getDate, commandData, data) ||
-                differs(EntryData::getKey, commandData, data) ||
-                differs(EntryData::getAccount, commandData, data) ||
-                differs(EntryData::getJar, commandData, data) ||
-                differs(EntryData::getAmount, commandData, data) ||
-                differs(EntryData::getAmountCents, commandData, data) ||
-                differs(EntryData::getDebetCredit, commandData, data) ||
-                differs(EntryData::getCode, commandData, data) ||
-                differs(EntryData::getKind, commandData, data) ||
-                differs(EntryData::getContraAccount, commandData, data) ||
-                differs(EntryData::getContraJar, commandData, data) ||
-                differs(EntryData::getDescription, commandData, data) ||
-                differs(EntryData::getRemarks, commandData, data)
-            ) {
-                commandData.setId(id);
-                apply(EntryDataUpdatedEvent.builder().id(id).data(commandData).build());
-            }
-        });
+        if (onceService.isFulfilled(this, command)) {
+            return;
+        }
+        onceService.sendTokenFulfilledEvent(command);
+        EntryData commandData = command.getData();
+        if (differs(EntryData::getDate, commandData, data) ||
+            differs(EntryData::getKey, commandData, data) ||
+            differs(EntryData::getAccount, commandData, data) ||
+            differs(EntryData::getJar, commandData, data) ||
+            differs(EntryData::getAmount, commandData, data) ||
+            differs(EntryData::getAmountCents, commandData, data) ||
+            differs(EntryData::getDebetCredit, commandData, data) ||
+            differs(EntryData::getCode, commandData, data) ||
+            differs(EntryData::getKind, commandData, data) ||
+            differs(EntryData::getContraAccount, commandData, data) ||
+            differs(EntryData::getContraJar, commandData, data) ||
+            differs(EntryData::getDescription, commandData, data) ||
+            differs(EntryData::getRemarks, commandData, data)
+        ) {
+            commandData.setId(id);
+            apply(EntryDataUpdatedEvent.builder().id(id).data(commandData).build());
+        }
     }
 
     private <T> boolean differs(Function<EntryData,T> getter, EntryData object, EntryData other) {
@@ -167,7 +169,11 @@ public class Entry implements CascadingCommandTracker {
     }
 
     @CommandHandler
-    public void handle(EntryUpdateJarCommand command) {
+    public void handle(EntryUpdateJarCommand command, TriggerCommandOnceService onceService) {
+        if (onceService.isFulfilled(this, command)) {
+            return;
+        }
+        onceService.sendTokenFulfilledEvent(command);
         String intendedJar = command.getIntendedJar();
         Boolean balanceMatchesIntention = command.getBalanceMatchesIntention();
         if (Objects.equals(intendedJar, this.intendedJar) &&
