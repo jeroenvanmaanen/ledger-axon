@@ -295,6 +295,22 @@ paths:
       responses:
         200:
           description: Successful operation
+  /api/entry/restore:
+    post:
+      tags:
+      - Ledger
+      description: Restore entries that were exported with /api/entries/date-prefix
+      operationId: restoreEntries
+      consumes:
+      - multipart/form-data
+      parameters:
+      - in: formData
+        name: data
+        description: The entries to restore
+        type: file
+      responses:
+        200:
+          description: Successful operation
   /api/entry/upload/{format}:
     post:
       tags:

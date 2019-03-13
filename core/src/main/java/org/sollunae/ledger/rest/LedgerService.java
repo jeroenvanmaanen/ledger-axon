@@ -1,7 +1,9 @@
 package org.sollunae.ledger.rest;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVRecord;
@@ -425,6 +427,28 @@ public class LedgerService implements LedgerApiDelegate {
                 }
             }
             log.info("Accounts imported: {}: failed: {}", imported, failed);
+        }
+    }
+
+    @Override
+    public ResponseEntity<Void> restoreEntries(MultipartFile data) {
+        log.info("Restore entries from exported JSON");
+        try {
+            restoreEntries(data.getInputStream());
+            return ResponseEntity.ok(null);
+        } catch (RuntimeException | IOException exception) {
+            log.error("Exception while uploading entries CSV", exception);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+        }
+    }
+
+    private void restoreEntries(InputStream stream) throws IOException {
+        ObjectMapper objectMapper = new ObjectMapper();
+        objectMapper.registerModule(new JavaTimeModule());
+        objectMapper.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
+        ArrayOfEntryData entryDataArray = objectMapper.readValue(stream, ArrayOfEntryData.class);
+        for (EntryData entry : entryDataArray) {
+            log.info("Restore: {}: {}: {}", entry.getKey(), entry.getAmountCents(), entry.getRemarks());
         }
     }
 
