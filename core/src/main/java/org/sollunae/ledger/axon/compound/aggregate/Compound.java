@@ -91,7 +91,8 @@ public class Compound implements CascadingCommandTracker {
     }
 
     @EventSourcingHandler
-    public void on(CompoundIntendedJarUpdatedEvent event) {
+    public void on(CompoundIntendedJarUpdatedEvent event, TriggerCommandOnceService onceService) {
+        onceService.handleTokenAllocations(this, event);
         intendedJar = event.getIntendedJar();
     }
 
@@ -115,7 +116,8 @@ public class Compound implements CascadingCommandTracker {
     }
 
     @EventSourcingHandler
-    public void on(CompoundEntryAddedEvent compoundEntryAddedEvent) {
+    public void on(CompoundEntryAddedEvent compoundEntryAddedEvent, TriggerCommandOnceService onceService) {
+        onceService.handleTokenAllocations(this, compoundEntryAddedEvent);
         CompoundMemberData member = compoundEntryAddedEvent.getMember();
         if (member == null) {
             return;
@@ -128,17 +130,23 @@ public class Compound implements CascadingCommandTracker {
     }
 
     @CommandHandler
-    public void handle(CompoundRemoveEntryCommand compoundRemoveEntryCommand) {
+    public void handle(CompoundRemoveEntryCommand compoundRemoveEntryCommand, TriggerCommandOnceService onceService) {
         String entryId = compoundRemoveEntryCommand.getEntryId();
         entryIds.remove(entryId);
         if (members.containsKey(entryId)) {
             members.remove(entryId);
-            apply(CompoundEntryRemovedEvent.builder().compoundId(id).entryId(entryId).build());
+            CompoundEntryRemovedEvent.builder()
+                .compoundId(id)
+                .entryId(entryId)
+                .build()
+                .map(onceService.allocate(this, entryId))
+                .apply();
         }
     }
 
     @EventSourcingHandler
-    public void on(CompoundEntryRemovedEvent compoundEntryRemovedEvent) {
+    public void on(CompoundEntryRemovedEvent compoundEntryRemovedEvent, TriggerCommandOnceService onceService) {
+        onceService.handleTokenAllocations(this, compoundEntryRemovedEvent);
         String entryId = compoundEntryRemovedEvent.getEntryId();
         entryIds.remove(entryId);
         members.remove(entryId);
@@ -196,6 +204,11 @@ public class Compound implements CascadingCommandTracker {
         } else {
             LOGGER.debug("Balance is unchanged");
         }
+    }
+
+    @EventSourcingHandler
+    public void on(CompoundEntryUpdatedEvent event, TriggerCommandOnceService onceService) {
+        onceService.handleTokenAllocations(this, event);
     }
 
     private String computeAffected(Map<String,Long> balance) {
