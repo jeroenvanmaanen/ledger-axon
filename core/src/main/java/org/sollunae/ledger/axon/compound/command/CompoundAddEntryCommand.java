@@ -14,4 +14,5 @@ public class CompoundAddEntryCommand implements LedgerCommand {
     private String id;
 
     private CompoundMemberData member;
+    private String currentIntendedJar;
 }

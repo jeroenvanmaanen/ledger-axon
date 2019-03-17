@@ -9,6 +9,7 @@ import org.axonframework.modelling.command.AggregateIdentifier;
 import org.axonframework.spring.stereotype.Aggregate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.sollunae.ledger.axon.LedgerCommandGateway;
 import org.sollunae.ledger.axon.compound.command.*;
 import org.sollunae.ledger.axon.compound.event.*;
 import org.sollunae.ledger.axon.once.CascadingCommandTracker;
@@ -97,20 +98,34 @@ public class Compound implements CascadingCommandTracker {
     }
 
     @CommandHandler
-    public void handle(CompoundAddEntryCommand compoundAddEntryCommand, TriggerCommandOnceService onceService) {
+    public void handle(CompoundAddEntryCommand compoundAddEntryCommand, TriggerCommandOnceService onceService, LedgerCommandGateway commandGateway) {
         CompoundMemberData member = compoundAddEntryCommand.getMember();
         if (member == null) {
             return;
+        }
+        String currentEntryIntendedJar = compoundAddEntryCommand.getCurrentIntendedJar();
+        log.debug("Handle CompoundAddEntryCommand: {} ({}) -> {} ({})", member.getId(), currentEntryIntendedJar, id, intendedJar);
+        if (!Objects.equals(currentEntryIntendedJar, intendedJar)) {
+            if (intendedJar == null) {
+                log.debug("Set intended Jar {}: {}", id, currentEntryIntendedJar);
+                CompoundUpdateIntendedJarCommand intendedJarCommand = CompoundUpdateIntendedJarCommand.builder()
+                    .intendedJar(currentEntryIntendedJar)
+                    .id(id)
+                    .build();
+                handle(intendedJarCommand, onceService);
+            }
         }
         String entryId = member.getId();
         members.put(entryId, member);
         if (!entryIds.contains(entryId)) {
             entryIds.add(entryId);
             Object event = CompoundEntryAddedEvent.builder()
+                .id(entryId)
                 .compoundId(id)
                 .member(member)
+                .newIntendedJar(intendedJar)
                 .build()
-                .map(onceService.allocate(this, entryId));
+                .map(onceService.allocate(this, id, entryId));
             apply(event);
         }
     }
@@ -194,7 +209,7 @@ public class Compound implements CascadingCommandTracker {
             String addedEntryId = command.getAddedEntryId();
             LOGGER.debug("Register compound status for new entry: ", addedEntryId);
             CompoundEntryUpdatedEvent.builder()
-                .compoundId(id)
+                .id(id)
                 .entryId(addedEntryId)
                 .intendedJar(intendedJar)
                 .balanceMatchesIntention(oldStatus)

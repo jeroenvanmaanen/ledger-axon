@@ -18,4 +18,5 @@ public class CompoundEntryAddedEvent implements WithAllocatedTokens<CompoundEntr
     Map<String,Long> allocatedTokens;
     String compoundId;
     CompoundMemberData member;
+    String newIntendedJar;
 }

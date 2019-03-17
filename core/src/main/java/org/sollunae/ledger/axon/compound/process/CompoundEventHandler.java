@@ -48,6 +48,12 @@ public class CompoundEventHandler {
         LOGGER.debug("On compound entry added event: member: {}", member.toString().replaceAll("[ \t\n]+", " "));
         Update update = Update.update("memberMap." + member.getId(), member);
         upsert(update, compoundId);
+        EntryUpdateJarCommand.builder()
+            .id(member.getId())
+            .intendedJar(event.getNewIntendedJar())
+            .build()
+            .map(onceService.prepareCommand(event))
+            .send(commandGateway);
         CompoundRebalanceCommand.builder()
             .id(compoundId)
             .addedEntryId(member.getId())

@@ -15,7 +15,6 @@ import java.util.Map;
 public class CompoundEntryUpdatedEvent implements WithAllocatedTokens<CompoundEntryUpdatedEvent> {
     String id;
     Map<String,Long> allocatedTokens;
-    String compoundId;
     String entryId;
     String intendedJar;
     Boolean balanceMatchesIntention;

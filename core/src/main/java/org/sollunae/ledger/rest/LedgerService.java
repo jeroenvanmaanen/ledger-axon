@@ -349,7 +349,7 @@ public class LedgerService implements LedgerApiDelegate {
         Iterable<EntryDocument> entries = entryRepository.findAllById(entryIds);
         for (EntryDocument entry : entries) {
             String entryId = entry.getId();
-            String entryCompoundId = entry.getCompoundId();
+            String entryCompoundId = getDataProperty(entry, EntryData::getCompoundId);
             log.debug("Checking entry: {}: {}: {}", entryId, entryCompoundId, compoundId);
             if (!Objects.equals(entryCompoundId, compoundId)) {
                 if (entryCompoundId == null) {
@@ -359,6 +359,10 @@ public class LedgerService implements LedgerApiDelegate {
                 }
             }
         }
+    }
+
+    private <T> T getDataProperty(EntryDocument entry, Function<EntryData,T> getter) {
+        return Optional.ofNullable(entry).map(EntryDocument::getData).map(getter).orElse(null);
     }
 
     private Map<String, CompoundMemberData> getMemberMap(CompoundDocument compoundDocument) {
@@ -448,8 +452,34 @@ public class LedgerService implements LedgerApiDelegate {
         objectMapper.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
         ArrayOfEntryData entryDataArray = objectMapper.readValue(stream, ArrayOfEntryData.class);
         for (EntryData entry : entryDataArray) {
-            log.info("Restore: {}: {}: {}", entry.getKey(), entry.getAmountCents(), entry.getRemarks());
+            log.info("Restore: {}: {}: {}: {}: {}", entry.getKey(), entry.getAmountCents(), entry.getJar(), entry.getContraJar(), entry.getRemarks());
+            commandGateway.sendAndWait(CreateEntryCommand.builder().id(entry.getId()).entry(entry).build());
+            addToCompound(entry);
         }
+    }
+
+    private void addToCompound(EntryData entry) {
+        String compoundId = entry.getCompoundId();
+        if (compoundId == null) {
+            return;
+        }
+        CompoundData compound;
+        try {
+            compound = queryGateway.query(CompoundByIdQuery.builder().compoundId(compoundId).build(), CompoundData.class).get();
+        } catch (InterruptedException | ExecutionException e) {
+            throw new RuntimeException(e);
+        }
+        if (compound == null) {
+            commandGateway.sendAndWait(CreateCompoundCommand.builder().id(compoundId).build());
+            String intendedJar = entry.getIntendedJar();
+            if (!StringUtils.isEmpty(intendedJar)) {
+                commandGateway.sendAndWait(CompoundUpdateIntendedJarCommand.builder().id(compoundId).intendedJar(intendedJar).build());
+                log.info("Compound created: {}: {}", compoundId, intendedJar);
+            }
+        }
+        String entryId = entry.getId();
+        commandGateway.sendAndWait(EntryAddToCompoundCommand.builder().id(entryId).compoundId(compoundId).build());
+        log.info("Added to compound: {}: {}", entryId, compoundId);
     }
 
     @Override

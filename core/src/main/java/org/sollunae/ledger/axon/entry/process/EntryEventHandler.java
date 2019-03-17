@@ -1,40 +1,33 @@
 package org.sollunae.ledger.axon.entry.process;
 
+import lombok.extern.slf4j.Slf4j;
 import org.axonframework.eventhandling.EventHandler;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.sollunae.ledger.axon.LedgerCommandGateway;
 import org.sollunae.ledger.axon.account.persistence.AccountDocument;
 import org.sollunae.ledger.axon.entry.aggregate.Entry;
-import org.sollunae.ledger.axon.entry.command.EntryUpdateDataCommand;
 import org.sollunae.ledger.axon.entry.event.*;
 import org.sollunae.ledger.axon.entry.persistence.EntryDocument;
-import org.sollunae.ledger.axon.once.TriggerCommandOnceService;
 import org.sollunae.ledger.model.AccountData;
 import org.sollunae.ledger.model.EntryData;
 import org.sollunae.ledger.util.StringUtil;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Component;
 
-import java.lang.invoke.MethodHandles;
 import java.util.Optional;
 
+@Slf4j
 @Component
 public class EntryEventHandler {
-    private static final Logger LOGGER = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
     private static final String BIJ = "Bij";
     private static final String CREDIT = "Credit";
 
-    private final LedgerCommandGateway commandGateway;
-    private final TriggerCommandOnceService onceService;
     private final MongoTemplate mongoTemplate;
 
-    public EntryEventHandler(LedgerCommandGateway commandGateway, TriggerCommandOnceService onceService, MongoTemplate mongoTemplate) {
-        this.commandGateway = commandGateway;
-        this.onceService = onceService;
+    @Autowired
+    public EntryEventHandler(MongoTemplate mongoTemplate) {
         this.mongoTemplate = mongoTemplate;
     }
 
@@ -48,28 +41,22 @@ public class EntryEventHandler {
         entry.setHidden(hide);
 
         String thisJar = getJar(thisAccount);
+        String contraJar = getJar(contraAccount);
         entry.setJar(thisJar);
-        entry.setContraJar(getJar(contraAccount));
+        entry.setContraJar(contraJar);
 
         Integer amountCents = getAmountCents(entry);
         entry.setAmountCents(amountCents);
 
-        if (LOGGER.isInfoEnabled()) {
+        if (log.isInfoEnabled()) {
             int cents = Optional.ofNullable(entry.getAmountCents()).orElse(0);
             StringBuilder justCents = new StringBuilder(String.valueOf(Math.abs(cents) % 100));
             while (justCents.length() < 2) {
                 justCents.insert(0, "0");
             }
             Object key = Optional.<Object>ofNullable(entry.getKey()).orElse(entry.getDate());
-            LOGGER.info("Created entry: {}: {}: {},{}{}", key, thisJar, cents/100, justCents, hide ? " (hidden)" : "");
+            log.info("Created entry: {}: {} -> {}: {},{}{}", key, thisJar, contraJar, cents/100, justCents, hide ? " (hidden)" : "");
         }
-
-        EntryUpdateDataCommand.builder()
-            .id(entryCreatedEvent.getId())
-            .data(entry)
-            .build()
-            .map(onceService.prepareCommand(entryCreatedEvent))
-            .send(commandGateway);
     }
 
     private String getJar(AccountDocument account) {
@@ -102,6 +89,7 @@ public class EntryEventHandler {
             entry.setIntendedJar("?");
             entry.setBalanceMatchesIntention(false);
         }
+        log.debug("Entry data updated: {}: {}: {} -> {}: {}", entry.getId(), entry.getDate(), entry.getJar(), entry.getContraJar(), entry.getAmountCents());
         Query query = Query.query(Criteria.where("id").is(entry.getId()));
         Update update = Update.update("id", entry.getId()).set("data", entry).set("_class", EntryDocument.class.getCanonicalName());
         mongoTemplate.upsert(query, update, Entry.class);
@@ -129,7 +117,7 @@ public class EntryEventHandler {
         String entryId = event.getEntryId();
         String intendedJar = event.getIntendedJar();
         Boolean status = event.getBalanceMatchesIntention();
-        LOGGER.trace("Entry Jar updated: {}: {}: {}", entryId, intendedJar, status);
+        log.debug("Entry Jar updated: {}: {}: {}", entryId, intendedJar, status);
         Query query = Query.query(Criteria.where("id").is(entryId));
         Update update = Update.update("id", entryId)
             .set("data.intendedJar", intendedJar)
@@ -143,7 +131,7 @@ public class EntryEventHandler {
         String entryId = event.getEntryId();
         String intendedJar = event.getIntendedJar();
         Boolean status = event.getBalanceMatchesIntention();
-        LOGGER.trace("Entry status updated: {}: {}", entryId, status);
+        log.debug("Entry status updated: {}: {}", entryId, status);
         Query query = Query.query(Criteria.where("id").is(entryId));
         Update update = Update.update("id", entryId)
             .set("data.intendedJar", intendedJar)

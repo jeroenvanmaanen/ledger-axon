@@ -47,14 +47,17 @@ public class Entry implements CascadingCommandTracker {
         log.trace("Create entry: {}: helper: {}", id);
         EntryData data = createCommand.getEntry();
         data.setId(id);
+        data.setCompoundId(null);
+        data.setIntendedJar(null);
+        data.setBalanceMatchesIntention(null);
         this.data = data;
         log.debug("Created entry: {}", data.getKey());
-        EntryCreatedEvent event = EntryCreatedEvent.builder()
+        EntryCreatedEvent.builder()
             .id(id)
             .data(data)
             .build()
-            .map(onceService.allocate(this, id));
-        apply(event);
+            .apply();
+        EntryDataUpdatedEvent.builder().id(id).data(data).build().apply();
     }
 
     @EventSourcingHandler
@@ -64,7 +67,6 @@ public class Entry implements CascadingCommandTracker {
         }
         id = entryCreatedEvent.getId();
         data = entryCreatedEvent.getData();
-        onceService.handleTokenAllocations(this, entryCreatedEvent);
     }
 
     @CommandHandler
@@ -92,6 +94,7 @@ public class Entry implements CascadingCommandTracker {
         LedgerCommand compoundAddEntryCommand = CompoundAddEntryCommand.builder()
             .id(compoundId)
             .member(member)
+            .currentIntendedJar(intendedJar)
             .build();
         commandGateway.sendAndWait(compoundAddEntryCommand);
         Object entryCompoundAddedEvent = EntryCompoundAddedEvent.builder()
@@ -134,6 +137,7 @@ public class Entry implements CascadingCommandTracker {
             return;
         }
         onceService.sendTokenFulfilledEvent(command);
+        log.debug("Handle EntryUpdateDataCommand: {}", id);
         EntryData commandData = command.getData();
         if (differs(EntryData::getDate, commandData, data) ||
             differs(EntryData::getKey, commandData, data) ||
@@ -151,6 +155,8 @@ public class Entry implements CascadingCommandTracker {
         ) {
             commandData.setId(id);
             apply(EntryDataUpdatedEvent.builder().id(id).data(commandData).build());
+        } else {
+            log.debug("Skipped emitting EntryDataUpdatedEvent for: {}", id);
         }
     }
 
@@ -175,6 +181,7 @@ public class Entry implements CascadingCommandTracker {
         }
         onceService.sendTokenFulfilledEvent(command);
         String intendedJar = command.getIntendedJar();
+        log.debug("Handle EntryUpdateJarCommand: {}: {} -> {}", id, this.intendedJar, intendedJar);
         Boolean balanceMatchesIntention = command.getBalanceMatchesIntention();
         if (Objects.equals(intendedJar, this.intendedJar) &&
             Objects.equals(balanceMatchesIntention, this.balanceMatchesIntention)
