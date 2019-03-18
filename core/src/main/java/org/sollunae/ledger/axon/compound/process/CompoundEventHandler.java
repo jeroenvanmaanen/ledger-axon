@@ -102,7 +102,7 @@ public class CompoundEventHandler {
 
     @EventHandler
     public void on(CompoundIntendedJarUpdatedEvent event) {
-        String compoundId = event.getCompoundId();
+        String compoundId = event.getId();
         Update update = Update.update("intendedJar", event.getIntendedJar())
             .set("balanceMatchesIntention", event.isBalanceMatchesIntention());
         upsert(update, compoundId);

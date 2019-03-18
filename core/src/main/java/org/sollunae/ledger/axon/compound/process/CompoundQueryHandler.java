@@ -4,15 +4,12 @@ import org.axonframework.queryhandling.QueryHandler;
 import org.sollunae.ledger.axon.compound.persistence.CompoundDocument;
 import org.sollunae.ledger.axon.compound.query.CompoundByIdQuery;
 import org.sollunae.ledger.model.CompoundData;
-import org.sollunae.ledger.model.CompoundMemberData;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Optional;
 
 @Component

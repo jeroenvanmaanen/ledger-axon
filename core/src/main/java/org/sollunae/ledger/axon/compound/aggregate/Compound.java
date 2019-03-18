@@ -82,7 +82,7 @@ public class Compound implements CascadingCommandTracker {
         LOGGER.debug("Target jar: {}: {} -> {}", id, intendedJar, newIntendedJar);
         intendedJar = newIntendedJar;
         CompoundIntendedJarUpdatedEvent.builder()
-            .compoundId(command.getId())
+            .id(command.getId())
             .intendedJar(command.getIntendedJar())
             .balanceMatchesIntention(Objects.equals(affected, intendedJar))
             .entryIds(entryIds)
