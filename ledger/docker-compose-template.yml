@@ -43,11 +43,6 @@ services:
     depends_on:
     - mongodb
     - axon-server
-    deploy:
-      mode: replicated
-      replicas: 2
-      restart_policy:
-        condition: on-failure
   ledger-present:
     image: ${DOCKER_REPOSITORY}/ledger-present:${LEDGER_IMAGE_VERSION}${PRESENT_SUFFIX}
     networks:
