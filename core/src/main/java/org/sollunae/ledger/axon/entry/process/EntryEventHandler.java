@@ -2,13 +2,10 @@ package org.sollunae.ledger.axon.entry.process;
 
 import lombok.extern.slf4j.Slf4j;
 import org.axonframework.eventhandling.EventHandler;
-import org.sollunae.ledger.axon.account.persistence.AccountDocument;
 import org.sollunae.ledger.axon.entry.aggregate.Entry;
 import org.sollunae.ledger.axon.entry.event.*;
 import org.sollunae.ledger.axon.entry.persistence.EntryDocument;
-import org.sollunae.ledger.model.AccountData;
 import org.sollunae.ledger.model.EntryData;
-import org.sollunae.ledger.util.StringUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
@@ -21,8 +18,6 @@ import java.util.Optional;
 @Slf4j
 @Component
 public class EntryEventHandler {
-    private static final String BIJ = "Bij";
-    private static final String CREDIT = "Credit";
 
     private final MongoTemplate mongoTemplate;
 
@@ -35,19 +30,6 @@ public class EntryEventHandler {
     public void on(EntryCreatedEvent entryCreatedEvent) {
         EntryData entry = entryCreatedEvent.getData();
 
-        AccountDocument thisAccount = findAccount(entry.getAccount());
-        AccountDocument contraAccount = findAccount(entry.getContraAccount());
-        boolean hide = thisAccount != null && contraAccount != null &&  thisAccount.getData().getDepth() > contraAccount.getData().getDepth();
-        entry.setHidden(hide);
-
-        String thisJar = getJar(thisAccount);
-        String contraJar = getJar(contraAccount);
-        entry.setJar(thisJar);
-        entry.setContraJar(contraJar);
-
-        Integer amountCents = getAmountCents(entry);
-        entry.setAmountCents(amountCents);
-
         if (log.isInfoEnabled()) {
             int cents = Optional.ofNullable(entry.getAmountCents()).orElse(0);
             StringBuilder justCents = new StringBuilder(String.valueOf(Math.abs(cents) % 100));
@@ -55,31 +37,11 @@ public class EntryEventHandler {
                 justCents.insert(0, "0");
             }
             Object key = Optional.<Object>ofNullable(entry.getKey()).orElse(entry.getDate());
+            String thisJar = entry.getJar();
+            String contraJar = entry.getContraJar();
+            boolean hide = entry.isHidden();
             log.info("Created entry: {}: {} -> {}: {},{}{}", key, thisJar, contraJar, cents/100, justCents, hide ? " (hidden)" : "");
         }
-    }
-
-    private String getJar(AccountDocument account) {
-        return Optional.ofNullable(account)
-            .map(AccountDocument::getData)
-            .map(AccountData::getKey)
-            .orElse("*");
-    }
-
-    private Integer getAmountCents(EntryData entry) {
-        int sign = BIJ.equals(entry.getDebetCredit()) || CREDIT.equals(entry.getDebetCredit()) ? +1 : -1;
-        return Optional.ofNullable(entry.getAmount())
-            .map(s -> s.replaceAll("[^0-9]", ""))
-            .filter(StringUtil::isNotEmpty)
-            .map(Integer::parseInt)
-            .map(cents -> sign * cents)
-            .orElse(null)
-        ;
-    }
-
-    private AccountDocument findAccount(String accountId) {
-        Query query = Query.query(Criteria.where("id").is(accountId));
-        return mongoTemplate.findOne(query, AccountDocument.class);
     }
 
     @EventHandler

@@ -6,9 +6,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.axonframework.commandhandling.CommandHandler;
 import org.axonframework.eventsourcing.EventSourcingHandler;
 import org.axonframework.modelling.command.AggregateIdentifier;
+import org.axonframework.queryhandling.QueryGateway;
 import org.axonframework.spring.stereotype.Aggregate;
 import org.sollunae.ledger.axon.LedgerCommand;
 import org.sollunae.ledger.axon.LedgerCommandGateway;
+import org.sollunae.ledger.axon.account.persistence.AccountDocument;
+import org.sollunae.ledger.axon.account.query.AccountByIdQuery;
 import org.sollunae.ledger.axon.compound.command.CompoundAddEntryCommand;
 import org.sollunae.ledger.axon.compound.command.CompoundRemoveEntryCommand;
 import org.sollunae.ledger.axon.entry.command.*;
@@ -17,10 +20,13 @@ import org.sollunae.ledger.axon.once.CascadingCommandTracker;
 import org.sollunae.ledger.axon.once.CommandCounter;
 import org.sollunae.ledger.axon.once.TokenFulfilledEvent;
 import org.sollunae.ledger.axon.once.TriggerCommandOnceService;
+import org.sollunae.ledger.model.AccountData;
 import org.sollunae.ledger.model.CompoundMemberData;
 import org.sollunae.ledger.model.EntryData;
+import org.sollunae.ledger.util.StringUtil;
 
 import java.util.Objects;
+import java.util.Optional;
 import java.util.function.Function;
 
 import static org.axonframework.modelling.command.AggregateLifecycle.apply;
@@ -30,6 +36,8 @@ import static org.axonframework.modelling.command.AggregateLifecycle.apply;
 @Getter
 @NoArgsConstructor
 public class Entry implements CascadingCommandTracker {
+    private static final String BIJ = "Bij";
+    private static final String CREDIT = "Credit";
 
     @AggregateIdentifier
     private String id;
@@ -41,7 +49,7 @@ public class Entry implements CascadingCommandTracker {
     private Boolean balanceMatchesIntention;
 
     @CommandHandler
-    public Entry(CreateEntryCommandUnsafe createCommand, TriggerCommandOnceService onceService) {
+    public Entry(CreateEntryCommandUnsafe createCommand, TriggerCommandOnceService onceService, QueryGateway queryGateway) {
         id = createCommand.getId();
         commandCounter = onceService.createCounter();
         log.trace("Create entry: {}: helper: {}", id);
@@ -50,6 +58,16 @@ public class Entry implements CascadingCommandTracker {
         data.setCompoundId(null);
         data.setIntendedJar(null);
         data.setBalanceMatchesIntention(null);
+        Integer amountCents = getAmountCents(data);
+        data.setAmountCents(amountCents);
+        AccountDocument thisAccount = findAccount(data.getAccount(), queryGateway);
+        AccountDocument contraAccount = findAccount(data.getContraAccount(), queryGateway);
+        boolean hide = thisAccount != null && contraAccount != null &&  thisAccount.getData().getDepth() > contraAccount.getData().getDepth();
+        data.setHidden(hide);
+        String thisJar = getJar(thisAccount);
+        String contraJar = getJar(contraAccount);
+        data.setJar(thisJar);
+        data.setContraJar(contraJar);
         this.data = data;
         log.debug("Created entry: {}", data.getKey());
         EntryCreatedEvent.builder()
@@ -58,6 +76,33 @@ public class Entry implements CascadingCommandTracker {
             .build()
             .apply();
         EntryDataUpdatedEvent.builder().id(id).data(data).build().apply();
+    }
+
+    private Integer getAmountCents(EntryData entry) {
+        int sign = BIJ.equals(entry.getDebetCredit()) || CREDIT.equals(entry.getDebetCredit()) ? +1 : -1;
+        return Optional.ofNullable(entry.getAmount())
+            .map(s -> s.replaceAll("[^0-9]", ""))
+            .filter(StringUtil::isNotEmpty)
+            .map(Integer::parseInt)
+            .map(cents -> sign * cents)
+            .orElse(null)
+            ;
+    }
+
+    private String getJar(AccountDocument account) {
+        return Optional.ofNullable(account)
+            .map(AccountDocument::getData)
+            .map(AccountData::getKey)
+            .orElse("*");
+    }
+
+    private AccountDocument findAccount(String accountId, QueryGateway queryGateway) {
+        try {
+            return queryGateway.query(AccountByIdQuery.builder().id(accountId).build(), AccountDocument.class).get();
+        } catch (Exception e) {
+            log.trace("Account not found: {}", accountId, e);
+            return null;
+        }
     }
 
     @EventSourcingHandler
