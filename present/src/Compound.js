@@ -109,7 +109,10 @@ class Compound extends Component {
                     <p>Transactions:</p>
                     <ul>
                         {this.state.transactions.map((transaction) => {
-                            return (<li key={transaction.id} data-id={transaction.id}>{transaction.key}: {transaction.amountCents} {transaction.jar} {transaction.contraJar}</li>);
+                            const date = transaction.key.substring(0,10);
+                            const suffix = transaction.key.substring(10);
+                            console.log('transaction', transaction, date);
+                            return (<li key={transaction.id} data-id={transaction.id}><span class='link' onClick={this.handleGoBack}>{date}</span>{suffix}: {transaction.amountCents} {transaction.jar} {transaction.contraJar}</li>);
                         })}
                     </ul>
                   </div>
