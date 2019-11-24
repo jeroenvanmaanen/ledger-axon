@@ -62,3 +62,7 @@ td {
 .compoundJars:hover > .unaffected > div.compoundJar {
     display: inline-block;
 }
+.link {
+    color: #00C;
+    text-decoration: underline;
+}

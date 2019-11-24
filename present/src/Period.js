@@ -92,6 +92,25 @@ class Period extends Component {
             unformatted = record[key]
             jar = self.accountJar(unformatted)
             value = self.formatAccount(unformatted)
+          } else if (key === 'remarks') {
+            const remarksText = record[key];
+            var parts = [];
+            var i = 0;
+            for (const match of remarksText.matchAll(/[0-9]{4}-[01][0-9]-[0-3][0-9]/)) {
+                if (match.index > i) {
+                    parts.push((<span data-id={i}>{remarksText.substring(i, match.index)}</span>));
+                }
+                parts.push((<span class='link' onClick={this.state.compoundApi.goBack} data-id={match.index}>{match[0]}</span>));
+                i = match.index + match[0].length;
+            }
+            if (i < 1) {
+              value = remarksText;
+            } else {
+              if (remarksText.length > i) {
+                parts.push((<span data-id={i}>{remarksText.substring(i)}</span>));
+              }
+              value = (parts);
+            }
           } else {
             value = '' + record[key];
           }

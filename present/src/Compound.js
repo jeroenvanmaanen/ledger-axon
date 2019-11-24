@@ -38,6 +38,7 @@ class Compound extends Component {
 
   render() {
     const compoundApi = {
+        goBack: this.handleGoBack,
         changeFocus: this.handleFocusChange,
         isMember: this.isMember,
         getAccounts: this.getAccounts
