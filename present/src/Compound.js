@@ -7,6 +7,7 @@ class Compound extends Component {
   constructor(props) {
     super(props);
     this.handlePrefixChange = this.handlePrefixChange.bind(this);
+    this.handleGoBack = this.handleGoBack.bind(this);
     this.handleExportChange = this.handleExportChange.bind(this);
     this.handleFocusChange = this.handleFocusChange.bind(this);
     this.handleLabelChange = this.handleLabelChange.bind(this);
@@ -28,6 +29,7 @@ class Compound extends Component {
       compoundRef: '',
       staticAccounts: {},
       staticPrefix: props.initialPrefix || '',
+      staticPrefixHistory: [],
       staticTransactions: [],
       staticExport: false
     };
@@ -117,7 +119,15 @@ class Compound extends Component {
             </div>
             <div>
               <form>
-                <p><input type="text" onChange={this.handlePrefixChange}/></p>
+                <p><input id='prefixInput' type="text" onChange={this.handlePrefixChange}/></p>
+                <div>
+                  <span>History</span>
+                  <ul>
+                    {this.state.staticPrefixHistory.map((prefixItem, i) => {
+                      return (<li data-id={i} onClick={this.handleGoBack}>{prefixItem}</li>)
+                    })}
+                  </ul>
+                </div>
                 <p>Show export <input type="checkbox" defaultChecked={this.state.staticExport} onClick={this.handleExportChange}/></p>
               </form>
               {this.state.staticExport
@@ -212,8 +222,57 @@ class Compound extends Component {
 
   handlePrefixChange(event) {
     const prefix = event.target.value;
-    this.setState({ staticPrefix: prefix });
+    var prefixHistory = this.state.staticPrefixHistory;
+    var addItem = false;
+    var replaceItem = false;
+    if (prefixHistory.length < 1) {
+      addItem = true;
+    } else {
+      const newLength = prefix.length;
+      const lastItem = prefixHistory[0];
+      const lastLength = lastItem.length;
+      if (newLength > lastLength) {
+        if (prefix.substring(0, lastLength) === lastItem) {
+          replaceItem = true;
+        } else {
+          addItem = true;
+        }
+      } else {
+        if (lastItem.substring(0, newLength) !== prefix) {
+          addItem = true;
+        }
+      }
+    }
+    if (replaceItem) {
+      prefixHistory[0] = prefix;
+    } else if (addItem) {
+      prefixHistory.unshift(prefix)
+    }
+    var tail = prefixHistory.slice(1);
+    const place = tail.indexOf(prefixHistory[0]);
+    if (place >= 0) {
+        tail.splice(place, 1);
+        tail.unshift(prefixHistory[0]);
+        prefixHistory = tail;
+    }
+    while (prefixHistory.length > 10) {
+      prefixHistory.pop();
+    }
+    var modifyState = { staticPrefix: prefix };
+    if (replaceItem || addItem) {
+      modifyState.staticPrefixHistory = prefixHistory;
+    }
+    this.setState(modifyState);
     this.refreshTransactions(prefix);
+  }
+
+  handleGoBack(event) {
+    const historyItem = event.target.textContent;
+    console.log(event.target.textContent);
+    const prefixInput = document.getElementById('prefixInput');
+    prefixInput.value = historyItem;
+    this.setState({staticPrefix: historyItem})
+    this.handlePrefixChange({target: prefixInput});
   }
 
   handleLabelChange(event) {
