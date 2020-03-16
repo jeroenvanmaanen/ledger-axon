@@ -57,6 +57,7 @@ public class EntryCommandHandler {
         parts.add(entry.getDescription());
         parts.add(entry.getRemarks());
         return parts.stream()
+            .map(part -> part == null ? "" : part)
             .map(part -> part.replace("%", "%25"))
             .map(part -> part.replace("|", "%7C"))
             .collect(Collectors.joining("|"));
