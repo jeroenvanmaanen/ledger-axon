@@ -93,10 +93,10 @@ class Period extends Component {
             jar = self.accountJar(unformatted)
             value = self.formatAccount(unformatted)
           } else if (key === 'remarks') {
-            const remarksText = record[key];
+            const remarksText = record[key] || '';
             var parts = [];
             var i = 0;
-            for (const match of remarksText.matchAll(/[0-9]{4}-[01][0-9]-[0-3][0-9]/)) {
+            for (const match of remarksText.matchAll(/[0-9]{4}-[01][0-9]-[0-3][0-9]/g)) {
                 if (match.index > i) {
                     parts.push((<span data-id={i}>{remarksText.substring(i, match.index)}</span>));
                 }
