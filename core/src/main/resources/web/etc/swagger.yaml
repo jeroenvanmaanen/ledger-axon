@@ -363,6 +363,17 @@ paths:
           description: Successful operation
           schema:
             $ref: "#/definitions/ArrayOfUniqueBucket"
+  /api/last_entry/date:
+    get:
+      tags:
+        - Ledger
+      description: Return the date of the last entry
+      operationId: lastEntryDate
+      responses:
+        200:
+          description: Successful operation
+          schema:
+            type: string
 definitions:
   AccountData:
     type: object

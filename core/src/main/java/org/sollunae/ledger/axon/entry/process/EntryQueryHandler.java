@@ -7,21 +7,26 @@ import org.sollunae.ledger.axon.entry.persistence.EntryDocument;
 import org.sollunae.ledger.axon.entry.persistence.LedgerEntryRepository;
 import org.sollunae.ledger.axon.entry.query.EntriesWithDatePrefixQuery;
 import org.sollunae.ledger.axon.entry.query.EntryByIdQuery;
+import org.sollunae.ledger.axon.entry.query.LastEntryQuery;
 import org.sollunae.ledger.model.ArrayOfEntryData;
 import org.sollunae.ledger.model.EntryData;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Component;
 
 import java.lang.invoke.MethodHandles;
+import java.text.DateFormat;
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 @Component
@@ -55,6 +60,20 @@ public class EntryQueryHandler {
             entriesArray.addAll(StreamSupport.stream(entries.spliterator(), false)
                 .map(EntryDocument::getData).collect(Collectors.toList()));
             return entriesArray;
+        } catch (RuntimeException exception) {
+            LOGGER.warn("Exception in query", exception);
+            throw exception;
+        }
+    }
+
+    @QueryHandler
+    public EntryData query(LastEntryQuery query) {
+        try {
+            Sort sort = Sort.by(Sort.Direction.DESC, "data.date");
+            return StreamSupport.stream(ledgerEntryRepository.findAll(sort).spliterator(), false)
+                .findFirst()
+                .map(EntryDocument::getData)
+                .orElse(null);
         } catch (RuntimeException exception) {
             LOGGER.warn("Exception in query", exception);
             throw exception;

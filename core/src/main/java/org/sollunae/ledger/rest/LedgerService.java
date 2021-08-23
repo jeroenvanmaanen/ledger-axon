@@ -25,6 +25,7 @@ import org.sollunae.ledger.axon.entry.persistence.EntryDocument;
 import org.sollunae.ledger.axon.entry.persistence.LedgerEntryRepository;
 import org.sollunae.ledger.axon.entry.query.EntriesWithDatePrefixQuery;
 import org.sollunae.ledger.axon.entry.query.EntryByIdQuery;
+import org.sollunae.ledger.axon.entry.query.LastEntryQuery;
 import org.sollunae.ledger.axon.unique.process.UniqueKeyService;
 import org.sollunae.ledger.model.*;
 import org.springframework.http.HttpStatus;
@@ -201,7 +202,7 @@ public class LedgerService implements LedgerApiDelegate {
             .compoundId(compoundId)
             .build();
         commandGateway.sendAndWait(entryAddToCompoundCommand);
-        return ResponseEntity.ok(null);
+        return ResponseEntity.ok().build();
     }
 
     @Override
@@ -210,7 +211,7 @@ public class LedgerService implements LedgerApiDelegate {
             .id(id)
             .build();
         commandGateway.sendAndWait(entryRemoveFromCompoundCommand);
-        return ResponseEntity.ok(null);
+        return ResponseEntity.ok().build();
     }
 
     @Override
@@ -240,7 +241,7 @@ public class LedgerService implements LedgerApiDelegate {
             }
             addEntryToCompound(entry.getId(), compoundId);
         }
-        return ResponseEntity.ok(null);
+        return ResponseEntity.ok().build();
     }
 
     @Override
@@ -258,7 +259,7 @@ public class LedgerService implements LedgerApiDelegate {
         log.info("Upload accounts YAML");
         try {
             uploadCompoundTransactions(data.getInputStream());
-            return ResponseEntity.ok(null);
+            return ResponseEntity.ok().build();
         } catch (RuntimeException | IOException exception) {
             log.error("Exception while uploading accounts YAML", exception);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
@@ -388,7 +389,7 @@ public class LedgerService implements LedgerApiDelegate {
         log.info("Upload accounts YAML");
         try {
             uploadAccounts(data.getInputStream());
-            return ResponseEntity.ok(null);
+            return ResponseEntity.ok().build();
         } catch (RuntimeException | IOException exception) {
             log.error("Exception while uploading accounts YAML", exception);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
@@ -439,7 +440,7 @@ public class LedgerService implements LedgerApiDelegate {
         log.info("Restore entries from exported JSON");
         try {
             restoreEntries(data.getInputStream());
-            return ResponseEntity.ok(null);
+            return ResponseEntity.ok().build();
         } catch (RuntimeException | IOException exception) {
             log.error("Exception while uploading entries CSV", exception);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
@@ -487,7 +488,7 @@ public class LedgerService implements LedgerApiDelegate {
         log.info("Upload entries CSV");
         try {
             uploadEntries(format, data.getInputStream());
-            return ResponseEntity.ok(null);
+            return ResponseEntity.ok().build();
         } catch (RuntimeException | IOException exception) {
             log.error("Exception while uploading entries CSV", exception);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
@@ -568,7 +569,7 @@ public class LedgerService implements LedgerApiDelegate {
     @Override
     public ResponseEntity<Void> cleanExistingKeys() {
         uniqueKeyService.cleanUniqueKeys();
-        return ResponseEntity.ok(null);
+        return ResponseEntity.ok().build();
     }
 
     @Override
@@ -576,5 +577,20 @@ public class LedgerService implements LedgerApiDelegate {
         ArrayOfUniqueBucket result = new ArrayOfUniqueBucket();
         result.addAll(uniqueKeyService.describeUniqueBuckets());
         return ResponseEntity.ok(result);
+    }
+
+    @Override
+    public ResponseEntity<String> lastEntryDate() {
+        try {
+            EntryData result = queryGateway.query(LastEntryQuery.builder().build(), EntryData.class).get();
+            return Optional.ofNullable(result)
+                .map(EntryData::getDate)
+                .map(DateTimeFormatter.ISO_LOCAL_DATE::format)
+                .map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).body(null));
+        } catch (InterruptedException | ExecutionException e) {
+            log.error("Error getting Entry", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+        }
     }
 }
