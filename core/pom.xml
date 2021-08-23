@@ -22,7 +22,7 @@
         <springfox.version>2.9.2</springfox.version>
         <swagger-codegen-cli.version>2.4.0</swagger-codegen-cli.version>
         <apache-commons-csv.version>1.6</apache-commons-csv.version>
-        <jackson.version>2.9.7</jackson.version>
+        <jackson.version>2.9.8</jackson.version>
         <dockerfile-maven.version>1.4.10</dockerfile-maven.version>
     </properties>
 
