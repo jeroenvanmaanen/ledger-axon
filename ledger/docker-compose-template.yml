@@ -66,4 +66,8 @@ services:
 
 volumes:
   mongo-data:
+    external: true
+    name: ledger_mongo-data
   axon-data:
+    external: true
+    name: ledger_axon-data
