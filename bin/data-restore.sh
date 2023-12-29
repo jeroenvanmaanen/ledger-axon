@@ -8,7 +8,7 @@ PROJECT="$(dirname "${BIN}")"
 source "${BIN}/verbose.sh"
 
 SUFFIX=''
-if [[ -n ".$1" ]]
+if [[ -n "$1" ]]
 then
     SUFFIX="-$1"
     shift
@@ -18,7 +18,8 @@ AXON_VOLUME='ledger_axon-data'
 
 function docker-volume-check() {
     local VOLUME_NAME="$1"
-    local RESULT="$(docker volume inspect "${VOLUME_NAME}" -f '{{.Name}}' 2>/dev/null || true)"
+    local RESULT
+    RESULT="$(docker volume inspect "${VOLUME_NAME}" -f '{{.Name}}' 2>/dev/null || true)"
     if [[ -n "${RESULT}" ]]
     then
         return 0
@@ -47,6 +48,7 @@ function docker-volume-rm() {
 docker-volume-rm "${AXON_VOLUME}"
 docker-volume-rm ledger_mongo-data
 docker volume create "${AXON_VOLUME}"
+docker volume create ledger_mongo-data
 
 docker run --rm -ti \
     -v "${AXON_VOLUME}:/opt/axonframework/data" \

@@ -3,6 +3,7 @@ version: '3.3'
 networks:
   ledger:
     driver: overlay
+    attachable: true
 
 services:
   axon-server:
