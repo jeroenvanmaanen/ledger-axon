@@ -2,8 +2,11 @@ version: '3.3'
 
 networks:
   ledger:
-    driver: overlay
+    driver: bridge
     attachable: true
+  gateway:
+    name: ix-nginx-proxy-manager_default
+    external: true
 
 services:
   axon-server:
@@ -37,6 +40,7 @@ services:
     image: ${DOCKER_REPOSITORY}/ledger-core:${LEDGER_IMAGE_VERSION}
     hostname: ledger-core
     networks:
+    - gateway
     - ledger
     ports:
     - target: 8080
@@ -57,6 +61,7 @@ services:
   ledger-proxy:
     image: ${DOCKER_REPOSITORY}/ledger-proxy:${LEDGER_IMAGE_VERSION}
     networks:
+    - gateway
     - ledger
     ports:
     - target: 80

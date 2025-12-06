@@ -1,537 +1,537 @@
 swagger: "2.0"
 info:
-  description: "This is Ledger server. [Swagger contract](resources/etc/swagger.yaml)."
-  version: 1.0.0
-  title: Ledger
-  termsOfService: http://swagger.io/terms/
-  contact:
-    url: http://leialearns.org/contact/
-  license:
-    name: LGPLv3
-    url: https://www.gnu.org/licenses/lgpl-3.0.en.html
-## host: localhost
+    description: "This is Ledger server. [Swagger contract](resources/etc/swagger.yaml)."
+    version: 1.0.0
+    title: Ledger
+    termsOfService: http://swagger.io/terms/
+    contact:
+        url: http://leialearns.org/contact/
+    license:
+        name: LGPLv3
+        url: https://www.gnu.org/licenses/lgpl-3.0.en.html
+host: ledger-core.local.sollunae.net:30021
 basePath: /api/greeter
 schemes:
-- http
+    - http
 consumes: []
 produces:
-- application/json
+    - application/json
 paths:
-  /api/prod/{name}:
-    post:
-      tags:
-      - Greeter
-      description: Prod the greeter to provoke a response
-      operationId: prod
-      parameters:
-      - in: path
-        name: name
-        description: The name of the person to greet
-        required: true
-        type: string
-      responses:
-        200:
-          description: Successful operation
-          schema:
-            type: string
-        405:
-          description: Invalid input
-      security:
-      - ledger_auth:
-        - write:ledger
-        - read:ledger
-  /api/accounts:
-    get:
-      tags:
-      - Ledger
-      description: Get all accounts
-      operationId: getAllAccounts
-      responses:
-        200:
-          description: Successful operation
-          schema:
-            $ref: "#/definitions/ArrayOfAccountData"
-  /api/account/{id}:
-    put:
-      tags:
-      - Ledger
-      description: Create a new Account
-      operationId: createAccount
-      parameters:
-      - in: path
-        name: id
-        description: The account number of the account to add
-        required: true
-        type: string
-      - in: body
-        name: account
-        description: Data for the account to add
-        schema:
-          $ref: "#/definitions/AccountData"
-      responses:
-        201:
-          description: Account created
-          schema:
-            type: string
-  /api/account/upload:
-    post:
-      tags:
-      - Ledger
-      description: Upload new Accounts
-      operationId: uploadAccounts
-      consumes:
-      - multipart/form-data
-      parameters:
-      - in: formData
-        name: data
-        description: The data to upload
-        type: file
-      responses:
-        200:
-          description: Successful operation
-  /api/entries/date-prefix:
-    post:
-      tags:
-      - Ledger
-      description: Get entries with a given date prefix
-      operationId: getEntriesWithPrefix
-      parameters:
-      - in: formData
-        name: datePrefix
-        description: The date prefix
-        type: string
-      responses:
-        200:
-          description: Successful operation
-          schema:
-            $ref: "#/definitions/ArrayOfEntryData"
-  /api/entry:
-    post:
-      tags:
-      - Ledger
-      description: Create a new ledger Entry
-      operationId: createEntry
-      parameters:
-      - in: body
-        name: entry
-        description: Data for the entry to add
-        schema:
-          $ref: "#/definitions/EntryData"
-      responses:
-        201:
-          description: Entry created
-          schema:
-            type: string
-  /api/entry/{id}:
-    get:
-      tags:
-      - Ledger
-      description: Get the data of a single Entry
-      operationId: getEntry
-      parameters:
-      - in: path
-        name: id
-        description: The Id of the Entry to get
-        required: true
-        type: string
-      responses:
-        200:
-          description: Successful operation
-          schema:
-            $ref: "#/definitions/EntryData"
-  /api/entry/{id}/compound/{compoundId}:
-    post:
-      tags:
-      - Ledger
-      description: Add an Entry to a Compound Transaction
-      operationId: addEntryToCompound
-      parameters:
-      - in: path
-        name: id
-        description: The Id of the Entry to add
-        required: true
-        type: string
-      - in: path
-        name: compoundId
-        description: The Id of the Compound to add the Entry to
-        required: true
-        type: string
-      responses:
-        200:
-          description: Successful operation
-  /api/entry/{id}/compound:
-    delete:
-      tags:
-      - Ledger
-      description: Remove an Entry from a Compound Transaction
-      operationId: removeEntryFromCompound
-      parameters:
-      - in: path
-        name: id
-        description: The Id of the Entry that is to be removed from its current Compound
-        required: true
-        type: string
-      responses:
-        200:
-          description: Successful operation
-  /api/entry/{id}/jar:
-    post:
-      tags:
-      - Ledger
-      description: Assign an Entry to a Jar
-      operationId: assignEntryToJar
-      consumes:
-      - application/json
-      parameters:
-      - in: path
-        name: id
-        description: The Id of the Entry
-        required: true
-        type: string
-      - in: body
-        name: jar
-        description: The Jar to assign to the Entry
-        schema:
-          $ref: "#/definitions/JarData"
-      responses:
-        200:
-          description: Successful operation
-  /api/compound:
-    post:
-      tags:
-      - Ledger
-      description: Create a new Compound Transaction
-      operationId: createCompound
-      responses:
-        201:
-          description: Compound Transaction created
-          schema:
-            type: string
-  /api/compound/{compoundId}:
-    get:
-      tags:
-      - Ledger
-      description: Get compound information
-      operationId: getCompound
-      parameters:
-      - in: path
-        name: compoundId
-        description: The Id of the Compound to retrieve
-        required: true
-        type: string
-      responses:
-        200:
-          description: Successful operation
-          schema:
-            $ref: "#/definitions/CompoundData"
-  /api/compound/{id}/member:
-    post:
-      tags:
-      - Ledger
-      description: Add a new member to the Compound Transaction
-      operationId: addMemberToCompound
-      consumes:
-      - application/json
-      parameters:
-      - in: path
-        name: id
-        description: The Id of the Compound Transaction to add to
-        required: true
-        type: string
-      - in: body
-        name: member
-        description: The member to add
-        schema:
-          $ref: "#/definitions/CompoundMemberData"
-      responses:
-        200:
-          description: Successful operation
-  /api/compound/{id}/intended-jar:
-    post:
-      tags:
-      - Ledger
-      description: Set the intended Jar for the Compound Transaction
-      operationId: setIntendedJar
-      consumes:
-      - application/json
-      parameters:
-      - in: path
-        name: id
-        description: The Id of the Compound Transaction to update
-        required: true
-        type: string
-      - in: body
-        name: intendedJar
-        description: The intended Jar
-        required: true
-        schema:
-          $ref: "#/definitions/JarData"
-      responses:
-        200:
-          description: Successful operation
-  /api/compound/upload:
-    post:
-      tags:
-      - Ledger
-      description: Upload new Compound Transactions
-      operationId: uploadCompoundTransactions
-      consumes:
-      - multipart/form-data
-      parameters:
-      - in: formData
-        name: data
-        description: The data to upload
-        type: file
-      responses:
-        200:
-          description: Successful operation
-  /api/compound/check-all:
-    post:
-      tags:
-      - Ledger
-      description: Check all Compound Transactions for member Entries that don't link back
-      operationId: checkCompoundTransactions
-      parameters:
-      responses:
-        200:
-          description: Successful operation
-  /api/entry/restore:
-    post:
-      tags:
-      - Ledger
-      description: Restore entries that were exported with /api/entries/date-prefix
-      operationId: restoreEntries
-      consumes:
-      - multipart/form-data
-      parameters:
-      - in: formData
-        name: data
-        description: The entries to restore
-        type: file
-      responses:
-        200:
-          description: Successful operation
-  /api/entry/upload/{format}:
-    post:
-      tags:
-      - Ledger
-      description: Upload new Entries
-      operationId: uploadEntries
-      consumes:
-      - multipart/form-data
-      parameters:
-      - in: path
-        name: format
-        description: Format of the CSV file (see org.apache.commons.csv.CSVFormat#Predefined)
-        required: true
-        type: string
-#        enum: # Either SwaggerCodegen or Springfox generates extra quotation marks that make this unusable
-#        - Default
-#        - Excel
-#        - InformixUnload
-#        - InformixUnloadCsv
-#        - MySQL
-#        - Oracle
-#        - PostgreSQLCsv
-#        - PostgreSQLText
-#        - RFC4180
-#        - TDF
-      - in: formData
-        name: data
-        description: The data to upload
-        type: file
-      responses:
-        200:
-          description: Successful operation
-  /api/admin/unique-bucket/clean-existing-keys:
-    post:
-      tags:
-      - Ledger
-      description: Move existing keys to their respective child buckets
-      operationId: cleanExistingKeys
-      responses:
-        200:
-          description: Successful operation
-  /api/admin/unique-bucket:
-    get:
-      tags:
-      - Ledger
-      description: Describe all unique buckets
-      operationId: describeUniqueBuckets
-      responses:
-        200:
-          description: Successful operation
-          schema:
-            $ref: "#/definitions/ArrayOfUniqueBucket"
-  /api/last_entry/date:
-    get:
-      tags:
-        - Ledger
-      description: Return the date of the last entry
-      operationId: lastEntryDate
-      responses:
-        200:
-          description: Successful operation
-          schema:
-            type: string
+    /api/prod/{name}:
+        post:
+            tags:
+                - Greeter
+            description: Prod the greeter to provoke a response
+            operationId: prod
+            parameters:
+                - in: path
+                  name: name
+                  description: The name of the person to greet
+                  required: true
+                  type: string
+            responses:
+                200:
+                    description: Successful operation
+                    schema:
+                        type: string
+                405:
+                    description: Invalid input
+            security:
+                - ledger_auth:
+                      - write:ledger
+                      - read:ledger
+    /api/accounts:
+        get:
+            tags:
+                - Ledger
+            description: Get all accounts
+            operationId: getAllAccounts
+            responses:
+                200:
+                    description: Successful operation
+                    schema:
+                        $ref: "#/definitions/ArrayOfAccountData"
+    /api/account/{id}:
+        put:
+            tags:
+                - Ledger
+            description: Create a new Account
+            operationId: createAccount
+            parameters:
+                - in: path
+                  name: id
+                  description: The account number of the account to add
+                  required: true
+                  type: string
+                - in: body
+                  name: account
+                  description: Data for the account to add
+                  schema:
+                      $ref: "#/definitions/AccountData"
+            responses:
+                201:
+                    description: Account created
+                    schema:
+                        type: string
+    /api/account/upload:
+        post:
+            tags:
+                - Ledger
+            description: Upload new Accounts
+            operationId: uploadAccounts
+            consumes:
+                - multipart/form-data
+            parameters:
+                - in: formData
+                  name: data
+                  description: The data to upload
+                  type: file
+            responses:
+                200:
+                    description: Successful operation
+    /api/entries/date-prefix:
+        post:
+            tags:
+                - Ledger
+            description: Get entries with a given date prefix
+            operationId: getEntriesWithPrefix
+            parameters:
+                - in: formData
+                  name: datePrefix
+                  description: The date prefix
+                  type: string
+            responses:
+                200:
+                    description: Successful operation
+                    schema:
+                        $ref: "#/definitions/ArrayOfEntryData"
+    /api/entry:
+        post:
+            tags:
+                - Ledger
+            description: Create a new ledger Entry
+            operationId: createEntry
+            parameters:
+                - in: body
+                  name: entry
+                  description: Data for the entry to add
+                  schema:
+                      $ref: "#/definitions/EntryData"
+            responses:
+                201:
+                    description: Entry created
+                    schema:
+                        type: string
+    /api/entry/{id}:
+        get:
+            tags:
+                - Ledger
+            description: Get the data of a single Entry
+            operationId: getEntry
+            parameters:
+                - in: path
+                  name: id
+                  description: The Id of the Entry to get
+                  required: true
+                  type: string
+            responses:
+                200:
+                    description: Successful operation
+                    schema:
+                        $ref: "#/definitions/EntryData"
+    /api/entry/{id}/compound/{compoundId}:
+        post:
+            tags:
+                - Ledger
+            description: Add an Entry to a Compound Transaction
+            operationId: addEntryToCompound
+            parameters:
+                - in: path
+                  name: id
+                  description: The Id of the Entry to add
+                  required: true
+                  type: string
+                - in: path
+                  name: compoundId
+                  description: The Id of the Compound to add the Entry to
+                  required: true
+                  type: string
+            responses:
+                200:
+                    description: Successful operation
+    /api/entry/{id}/compound:
+        delete:
+            tags:
+                - Ledger
+            description: Remove an Entry from a Compound Transaction
+            operationId: removeEntryFromCompound
+            parameters:
+                - in: path
+                  name: id
+                  description: The Id of the Entry that is to be removed from its current Compound
+                  required: true
+                  type: string
+            responses:
+                200:
+                    description: Successful operation
+    /api/entry/{id}/jar:
+        post:
+            tags:
+                - Ledger
+            description: Assign an Entry to a Jar
+            operationId: assignEntryToJar
+            consumes:
+                - application/json
+            parameters:
+                - in: path
+                  name: id
+                  description: The Id of the Entry
+                  required: true
+                  type: string
+                - in: body
+                  name: jar
+                  description: The Jar to assign to the Entry
+                  schema:
+                      $ref: "#/definitions/JarData"
+            responses:
+                200:
+                    description: Successful operation
+    /api/compound:
+        post:
+            tags:
+                - Ledger
+            description: Create a new Compound Transaction
+            operationId: createCompound
+            responses:
+                201:
+                    description: Compound Transaction created
+                    schema:
+                        type: string
+    /api/compound/{compoundId}:
+        get:
+            tags:
+                - Ledger
+            description: Get compound information
+            operationId: getCompound
+            parameters:
+                - in: path
+                  name: compoundId
+                  description: The Id of the Compound to retrieve
+                  required: true
+                  type: string
+            responses:
+                200:
+                    description: Successful operation
+                    schema:
+                        $ref: "#/definitions/CompoundData"
+    /api/compound/{id}/member:
+        post:
+            tags:
+                - Ledger
+            description: Add a new member to the Compound Transaction
+            operationId: addMemberToCompound
+            consumes:
+                - application/json
+            parameters:
+                - in: path
+                  name: id
+                  description: The Id of the Compound Transaction to add to
+                  required: true
+                  type: string
+                - in: body
+                  name: member
+                  description: The member to add
+                  schema:
+                      $ref: "#/definitions/CompoundMemberData"
+            responses:
+                200:
+                    description: Successful operation
+    /api/compound/{id}/intended-jar:
+        post:
+            tags:
+                - Ledger
+            description: Set the intended Jar for the Compound Transaction
+            operationId: setIntendedJar
+            consumes:
+                - application/json
+            parameters:
+                - in: path
+                  name: id
+                  description: The Id of the Compound Transaction to update
+                  required: true
+                  type: string
+                - in: body
+                  name: intendedJar
+                  description: The intended Jar
+                  required: true
+                  schema:
+                      $ref: "#/definitions/JarData"
+            responses:
+                200:
+                    description: Successful operation
+    /api/compound/upload:
+        post:
+            tags:
+                - Ledger
+            description: Upload new Compound Transactions
+            operationId: uploadCompoundTransactions
+            consumes:
+                - multipart/form-data
+            parameters:
+                - in: formData
+                  name: data
+                  description: The data to upload
+                  type: file
+            responses:
+                200:
+                    description: Successful operation
+    /api/compound/check-all:
+        post:
+            tags:
+                - Ledger
+            description: Check all Compound Transactions for member Entries that don't link back
+            operationId: checkCompoundTransactions
+            parameters:
+            responses:
+                200:
+                    description: Successful operation
+    /api/entry/restore:
+        post:
+            tags:
+                - Ledger
+            description: Restore entries that were exported with /api/entries/date-prefix
+            operationId: restoreEntries
+            consumes:
+                - multipart/form-data
+            parameters:
+                - in: formData
+                  name: data
+                  description: The entries to restore
+                  type: file
+            responses:
+                200:
+                    description: Successful operation
+    /api/entry/upload/{format}:
+        post:
+            tags:
+                - Ledger
+            description: Upload new Entries
+            operationId: uploadEntries
+            consumes:
+                - multipart/form-data
+            parameters:
+                - in: path
+                  name: format
+                  description: Format of the CSV file (see org.apache.commons.csv.CSVFormat#Predefined)
+                  required: true
+                  type: string
+                #        enum: # Either SwaggerCodegen or Springfox generates extra quotation marks that make this unusable
+                #        - Default
+                #        - Excel
+                #        - InformixUnload
+                #        - InformixUnloadCsv
+                #        - MySQL
+                #        - Oracle
+                #        - PostgreSQLCsv
+                #        - PostgreSQLText
+                #        - RFC4180
+                #        - TDF
+                - in: formData
+                  name: data
+                  description: The data to upload
+                  type: file
+            responses:
+                200:
+                    description: Successful operation
+    /api/admin/unique-bucket/clean-existing-keys:
+        post:
+            tags:
+                - Ledger
+            description: Move existing keys to their respective child buckets
+            operationId: cleanExistingKeys
+            responses:
+                200:
+                    description: Successful operation
+    /api/admin/unique-bucket:
+        get:
+            tags:
+                - Ledger
+            description: Describe all unique buckets
+            operationId: describeUniqueBuckets
+            responses:
+                200:
+                    description: Successful operation
+                    schema:
+                        $ref: "#/definitions/ArrayOfUniqueBucket"
+    /api/last_entry/date:
+        get:
+            tags:
+                - Ledger
+            description: Return the date of the last entry
+            operationId: lastEntryDate
+            responses:
+                200:
+                    description: Successful operation
+                    schema:
+                        type: string
 definitions:
-  AccountData:
-    type: object
-    required:
-    - bank
-    - account
-    - key
-    properties:
-      bank:
-        type: string
-      account:
-        type: string
-      key:
-        type: string
-      label:
-        type: string
-      depth:
-        type: integer
-  ArrayOfAccountData:
-    type: array
-    items:
-      $ref: "#/definitions/AccountData"
-  JarData:
-    type: object
-    properties:
-      code:
-        type: string
-  EntryData:
-    type: object
-    required:
-    - date
-    - account
-    - amountCents
-    properties:
-      id:
-        type: string
-      date:
-        type: string
-        format: date
-        example: 2018-11-30
-      description:
-        type: string
-      account:
-        type: string
-      jar:
-        type: string
-      contraAccount:
-        type: string
-      contraJar:
-        type: string
-      code:
-        type: string
-      debetCredit:
-        type: string
-      amount:
-        type: string
-      amountCents:
-        type: integer
-      kind:
-        type: string
-      remarks:
-        type: string
-      hidden:
-        type: boolean
-      key:
-        type: string
-      compoundId:
-        type: string
-      intendedJar:
-        type: string
-      balanceMatchesIntention:
-        type: boolean
-  ArrayOfEntryData:
-    type: array
-    items:
-      $ref: "#/definitions/EntryData"
-  LabelData:
-    type: object
-    properties:
-      id:
-        type: string
-      entryId:
-        type: string
-      description:
-        type: string
-      jar:
-        type: string
-      isComplete:
-        type: boolean
-  CompoundData:
-    type: object
-    properties:
-      id:
-        type: string
-      key:
-        type: string
-      intendedJar:
-        type: string
-      members:
+    AccountData:
         type: object
-        additionalProperties:
-          $ref: "#/definitions/CompoundMemberData"
-      balance:
+        required:
+            - bank
+            - account
+            - key
+        properties:
+            bank:
+                type: string
+            account:
+                type: string
+            key:
+                type: string
+            label:
+                type: string
+            depth:
+                type: integer
+    ArrayOfAccountData:
+        type: array
+        items:
+            $ref: "#/definitions/AccountData"
+    JarData:
         type: object
-        additionalProperties:
-          type: integer
-          format: int64
-      balanceMatchesIntention:
-        type: boolean
-  CompoundMemberData:
-    type: object
-    properties:
-      id:
-        type: string
-      key:
-        type: string
-      amountCents:
-        type: integer
-      jar:
-        type: string
-      contraJar:
-        type: string
-  CompoundReference:
-    type: object
-    required:
-      - compoundId
-    properties:
-      compoundId:
-        type: string
-  ArrayOfCompoundData:
-    type: array
-    items:
-      $ref: "#/definitions/CompoundData"
-  UniqueBucket:
-    type: object
-    properties:
-      id:
-        type: string
-      fullKeyPrefix:
-        type: string
-      keyPrefix:
-        type: string
-      parentId:
-        type: string
-  ArrayOfUniqueBucket:
-    type: array
-    items:
-      $ref: "#/definitions/UniqueBucket"
+        properties:
+            code:
+                type: string
+    EntryData:
+        type: object
+        required:
+            - date
+            - account
+            - amountCents
+        properties:
+            id:
+                type: string
+            date:
+                type: string
+                format: date
+                example: 2018-11-30
+            description:
+                type: string
+            account:
+                type: string
+            jar:
+                type: string
+            contraAccount:
+                type: string
+            contraJar:
+                type: string
+            code:
+                type: string
+            debetCredit:
+                type: string
+            amount:
+                type: string
+            amountCents:
+                type: integer
+            kind:
+                type: string
+            remarks:
+                type: string
+            hidden:
+                type: boolean
+            key:
+                type: string
+            compoundId:
+                type: string
+            intendedJar:
+                type: string
+            balanceMatchesIntention:
+                type: boolean
+    ArrayOfEntryData:
+        type: array
+        items:
+            $ref: "#/definitions/EntryData"
+    LabelData:
+        type: object
+        properties:
+            id:
+                type: string
+            entryId:
+                type: string
+            description:
+                type: string
+            jar:
+                type: string
+            isComplete:
+                type: boolean
+    CompoundData:
+        type: object
+        properties:
+            id:
+                type: string
+            key:
+                type: string
+            intendedJar:
+                type: string
+            members:
+                type: object
+                additionalProperties:
+                    $ref: "#/definitions/CompoundMemberData"
+            balance:
+                type: object
+                additionalProperties:
+                    type: integer
+                    format: int64
+            balanceMatchesIntention:
+                type: boolean
+    CompoundMemberData:
+        type: object
+        properties:
+            id:
+                type: string
+            key:
+                type: string
+            amountCents:
+                type: integer
+            jar:
+                type: string
+            contraJar:
+                type: string
+    CompoundReference:
+        type: object
+        required:
+            - compoundId
+        properties:
+            compoundId:
+                type: string
+    ArrayOfCompoundData:
+        type: array
+        items:
+            $ref: "#/definitions/CompoundData"
+    UniqueBucket:
+        type: object
+        properties:
+            id:
+                type: string
+            fullKeyPrefix:
+                type: string
+            keyPrefix:
+                type: string
+            parentId:
+                type: string
+    ArrayOfUniqueBucket:
+        type: array
+        items:
+            $ref: "#/definitions/UniqueBucket"
 
 securityDefinitions:
-  ledger_auth:
-    type: oauth2
-    authorizationUrl: /oauth/authorize
-    flow: implicit
-    scopes:
-      write:ledger: modify ledger in your account
-      read:ledger: read your ledger
-  api_key:
-    type: apiKey
-    name: api_key
-    in: header
+    ledger_auth:
+        type: oauth2
+        authorizationUrl: /oauth/authorize
+        flow: implicit
+        scopes:
+            write:ledger: modify ledger in your account
+            read:ledger: read your ledger
+    api_key:
+        type: apiKey
+        name: api_key
+        in: header

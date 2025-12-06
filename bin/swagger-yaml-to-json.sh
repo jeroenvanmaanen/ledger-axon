@@ -14,6 +14,6 @@ then
         | tee "${GENERATED_API}/swagger.json"
 else
     docker run --rm -v "${PROJECT}:${PROJECT}" -w "${PROJECT}" simplealpine/yaml2json:latest core/src/main/resources/web/etc/swagger.yaml \
-        | docker run --rm -i stedolan/jq . \
+        | docker run --rm -i mikefarah/yq . \
         > "${GENERATED_API}/swagger.json"
 fi

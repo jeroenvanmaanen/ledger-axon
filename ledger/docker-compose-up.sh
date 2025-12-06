@@ -49,6 +49,11 @@ then
     working_dir: ${PRESENT}"
 fi
 
+if [[ ".$1" = '.--' ]]
+then
+    shift
+fi
+
 BASE="${COMPOSE}/docker-compose"
 TEMPLATE="${BASE}-template.yml"
 TARGET="${BASE}.yml"
@@ -79,5 +84,5 @@ done
 
 (
     cd "${COMPOSE}"
-    docker-compose up
+    docker compose up "$@"
 )

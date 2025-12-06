@@ -42,8 +42,8 @@ function docker-volume-rm() {
 
 (
     cd "${PROJECT}/ledger"
-    docker-compose rm -f axon-server || true
-    docker-compose rm -f mongodb || true
+    docker compose rm -f axon-server || true
+    docker compose rm -f mongodb || true
 )
 docker-volume-rm "${AXON_VOLUME}"
 docker-volume-rm ledger_mongo-data

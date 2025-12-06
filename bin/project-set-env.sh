@@ -34,7 +34,6 @@ function find-bin-dirs() {
   find "${TOP}" -maxdepth "${DEPTH}" \( -type d -name node_modules -prune -type f \) -o -type d -name bin \
     | sed -e 's:/bin$:/!:' \
     | sort \
-    | sed \
     | sed -e 's@/!$@/bin@'
 }
 

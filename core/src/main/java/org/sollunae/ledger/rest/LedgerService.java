@@ -59,6 +59,7 @@ public class LedgerService implements LedgerApiDelegate {
     private final Map<String,CSVFormat> csvFormatMap = new HashMap<>();
     private final Map<String, BiConsumer<EntryData,String>> stringSetterMap = new HashMap<>();
     private final Map<String, BiConsumer<EntryData,LocalDate>> dateSetterMap = new HashMap<>();
+    private final Set<String> ignoreSet = new HashSet();
     private final UniqueKeyService uniqueKeyService;
 
     public LedgerService(LedgerCommandGateway ledgerCommandGateway, QueryGateway queryGateway, LedgerEntryRepository entryRepository, LedgerCompoundRepository compoundRepository, UniqueKeyService uniqueKeyService) {
@@ -70,6 +71,8 @@ public class LedgerService implements LedgerApiDelegate {
         for (CSVFormat.Predefined csvFormat : CSVFormat.Predefined.values()) {
             csvFormatMap.put(csvFormat.name(), csvFormat.getFormat());
         }
+
+        // Nederlands
         dateSetterMap.put("Datum", EntryData::setDate);
         stringSetterMap.put("Naam / Omschrijving", EntryData::setDescription);
         stringSetterMap.put("Rekening", EntryData::setAccount);
@@ -79,6 +82,20 @@ public class LedgerService implements LedgerApiDelegate {
         stringSetterMap.put("Bedrag (EUR)", EntryData::setAmount);
         stringSetterMap.put("MutatieSoort", EntryData::setKind);
         stringSetterMap.put("Mededelingen", EntryData::setRemarks);
+        ignoreSet.add("Saldo na mutatie");
+        ignoreSet.add("Tag");
+
+        // English
+        dateSetterMap.put("Date", EntryData::setDate);
+        stringSetterMap.put("Name / Description", EntryData::setDescription);
+        stringSetterMap.put("Account", EntryData::setAccount);
+        stringSetterMap.put("Counterparty", EntryData::setContraAccount);
+        stringSetterMap.put("Code", EntryData::setCode);
+        stringSetterMap.put("Debit/credit", EntryData::setDebetCredit);
+        stringSetterMap.put("Amount (EUR)", EntryData::setAmount);
+        stringSetterMap.put("Transaction type", EntryData::setKind);
+        stringSetterMap.put("Notifications", EntryData::setRemarks);
+        ignoreSet.add("Resulting balance");
     }
 
     @Override
@@ -541,7 +558,7 @@ public class LedgerService implements LedgerApiDelegate {
             if (mapTo(entryData, stringSetterMap, Function.identity(), entry) ||
                 mapTo(entryData, dateSetterMap, this::toLocalDate, entry)) {
                 log.trace("Mapped: {}: {}", entry.getKey(), entry.getValue());
-            } else {
+            } else if (!ignoreSet.contains(entry.getKey())) {
                 log.warn("Unable to map: {}, {}", entry.getKey(), entry.getValue());
             }
         }
